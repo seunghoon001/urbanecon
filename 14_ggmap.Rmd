@@ -1,0 +1,290 @@
+---
+title: "Basic mapping with ggmap"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+```
+
+Google API registration
+
+geocode
+
+get_map
+
+ggmap
+
+baselayer
+
+facet_wrap
+
+---
+
+### Google API registration
+
+1. Go to https://cloud.google.com/maps-platform/
+1. Press 'GET STARTED' button.
+1. Sign-in or create account.
+1. Create a project - COMM 407
+1. Create billing account. You will need credit card information.
+1. Pick products - check all.
+1. Enable Google Maps Platform
+1. Save your API key
+
+---
+
+```{r}
+library(ggmap)
+library(tidyverse)
+```
+
+```{r eval=FALSE}
+register_google("Your API key here")
+```
+
+```{r echo=FALSE}
+register_google("AIzaSyB7XZzRqFHPanx4ph26Rvmo7Qg_P1AHvHM")
+```
+
+---
+
+### Geocoding
+
+.small[
+```{r}
+tb <- tibble(
+  address = c("2053 main mall Vancouver", "Pacific Poke UBC", "Chen centre"))
+
+tb
+```
+]
+
+---
+
+```{r cache=TRUE}
+tb <- tb %>% mutate_geocode(address)
+
+tb
+```
+
+---
+
+```{r}
+ggplot(tb) + geom_point(aes(lon, lat))
+```
+
+```{r cache=TRUE}
+ubcmap <- get_map("University of British Columbia Vancouver")
+```
+
+---
+
+```{r}
+ggmap(ubcmap)
+```
+
+---
+
+```{r cache=TRUE}
+ubcmap <- get_map("Sauder School of Business", zoom=15)
+```
+
+```{r}
+ggmap(ubcmap) + geom_point(aes(lon, lat), tb, color="red", size=3)
+```
+
+---
+
+```{r}
+ggmap(ubcmap) + geom_point(aes(lon, lat), tb, color="red", size=3) + 
+  ggrepel::geom_text_repel(aes(lon, lat, label=address), tb)
+```
+
+
+---
+
+### base_layer
+
+```{r}
+ggmap(ubcmap, base_layer = ggplot(tb, aes(lon, lat))) + 
+  geom_point(color="red", size=3) + 
+  ggrepel::geom_text_repel(aes(label=address))
+```
+
+---
+
+### Map type
+
+```{r eval=FALSE}
+? get_map
+```
+
+get_map(location = c(lon = -95.3632715, lat = 29.7632836),
+  zoom = "auto", scale = "auto", maptype = c("terrain",
+  "terrain-background", "satellite", "roadmap", "hybrid", "toner",
+  "watercolor", "terrain-labels", "terrain-lines", "toner-2010",
+  "toner-2011", "toner-background", "toner-hybrid", "toner-labels",
+  "toner-lines", "toner-lite"), source = c("google", "osm", "stamen"),
+  force = ifelse(source == "google", TRUE, FALSE), messaging = FALSE,
+  urlonly = FALSE, filename = NULL, crop = TRUE, color = c("color",
+  "bw"), language = "en-EN", ...)
+
+---
+
+.tiny[
+```{r cache=TRUE}
+ubcmap_2 <- get_map("Sauder School of Business", zoom=15, maptype="roadmap")
+ggmap(ubcmap_2)
+```
+]
+
+---
+
+```{r}
+ggmap(ubcmap_2, base_layer = ggplot(tb, aes(lon, lat))) + 
+  geom_point(color="red", size=3) + 
+  ggrepel::geom_text_repel(aes(label=address))
+```
+
+---
+
+.small[
+```{r cache=TRUE}
+ubcmap_stamen <- get_map("Sauder School of Business", 
+                         zoom=15, source="stamen")
+ggmap(ubcmap_stamen)
+```
+]
+
+---
+
+```{r}
+ggmap(ubcmap_stamen, base_layer = ggplot(tb, aes(lon, lat))) + 
+  geom_point(color="red", size=3) + 
+  ggrepel::geom_text_repel(aes(label=address))
+```
+
+---
+
+.small[
+```{r cache=TRUE}
+ubcmap_stamen_2 <- get_map("Sauder School of Business", zoom=15, 
+                           source="stamen", maptype = "toner-lite")
+ggmap(ubcmap_stamen_2)
+```
+]
+
+---
+
+```{r}
+ggmap(ubcmap_stamen_2, base_layer = ggplot(tb, aes(lon, lat))) + 
+  geom_point(color="red", size=3) + 
+  ggrepel::geom_text_repel(aes(label=address))
+```
+
+---
+
+### theme_void()
+
+.small[
+```{r}
+ggmap(ubcmap_stamen_2, base_layer = ggplot(tb, aes(lon, lat))) + 
+  geom_point(color="red", size=3) + 
+  ggrepel::geom_text_repel(aes(label=address)) + theme_void()
+```
+]
+
+---
+
+```{r cache=TRUE}
+bca_2018_7 <- read_rds("Data/bca_sm.rds") %>% 
+  filter(lubridate::year(sale_date) == 2018) %>% 
+  filter(lubridate::month(sale_date) == 7)
+```
+
+---
+
+```{r}
+ggplot(bca_2018_7) + geom_point(aes(lon, lat))
+```
+
+---
+
+```{r cache=TRUE}
+vanmap <- get_map("Vancouver Canada")
+ggmap(vanmap) 
+```
+
+---
+
+```{r}
+vanmap <- get_map("Surrey Canada")
+ggmap(vanmap) + geom_point(aes(lon, lat), bca_2018_7) 
+```
+
+---
+
+```{r}
+ggmap(vanmap) + geom_point(aes(lon, lat, color=price), bca_2018_7) 
+```
+
+---
+
+.small[
+```{r}
+ggmap(vanmap) + geom_point(aes(lon, lat, color=price), bca_2018_7) +
+  scale_color_viridis_c()
+```
+]
+
+---
+
+.small[
+```{r cache=TRUE}
+vanmap <- get_map("Surrey Canada", source = "stamen", maptype = "toner-lite")
+
+ggmap(vanmap) + geom_point(aes(lon, lat, color=price), bca_2018_7, alpha=0.5) + 
+  scale_color_viridis_c()
+```
+]
+
+---
+
+.small[
+```{r}
+ggmap(vanmap) + geom_point(aes(lon, lat, color=price), bca_2018_7, alpha=0.5) + 
+  scale_color_viridis_c() + theme_void()
+```
+]
+
+---
+
+.small[
+```{r}
+ggmap(vanmap) + geom_point(aes(lon, lat, color=price), bca_2018_7, alpha=0.5) + 
+  facet_wrap(~act_use_cat)+ scale_color_viridis_c() + theme_void()
+```
+]
+
+---
+
+.tiny[
+```{r}
+ggmap(vanmap) + geom_point(aes(lon, lat, color=2018-year_built), bca_2018_7, alpha=0.5) + 
+  facet_wrap(~act_use_cat)+ scale_color_viridis_c("Age") + theme_void()
+```
+]
+

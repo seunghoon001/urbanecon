@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>ggplot2 - 4</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sanghoon Lee" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="c407_slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# ggplot2 - 4
+## Theme
+### Sanghoon Lee
+### 12 March, 2020
+
+---
+
+
+
+
+- geom_segment
+
+- lollipop chart
+
+- Built-in themes
+
+- factor
+
+The following will be covered later:
+
+- theme - legend.position
+
+- facet_wrap
+
+- facet_grid
+
+---
+
+
+```r
+library(tidyverse)
+```
+
+---
+
+### geom_segment
+
+.pull-left-1[
+.small[
+
+```r
+tb &lt;- tibble(
+	x0=c(0,1), 
+	y0=c(0,1), 
+	x_chr=c(2,2), 
+	y1=c(1,0))
+tb
+```
+
+```
+# A tibble: 2 x 4
+     x0    y0 x_chr    y1
+  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+1     0     0     2     1
+2     1     1     2     0
+```
+]]
+
+.pull-right-2[
+.tiny[
+
+```r
+ggplot(tb) + 
+	geom_segment(aes(x=x0,y=y0,xend=x_chr, yend=y1))
+```
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-3-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]]
+
+---
+
+.pull-left-1[
+.small[
+
+```r
+tb
+```
+
+```
+# A tibble: 2 x 4
+     x0    y0 x_chr    y1
+  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+1     0     0     2     1
+2     1     1     2     0
+```
+]]
+
+.pull-right-2[
+.small[
+
+```r
+ggplot(tb, aes(x0, y0)) + 
+	geom_point(size = 3) +
+	geom_segment(aes(xend=x_chr, yend=y1))
+```
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-5-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]]
+
+
+---
+
+
+```r
+bca_2017 &lt;- read_rds("data/bca_sm.rds") %&gt;% 
+	filter(lubridate::year(sale_date) == 2017)
+```
+
+---
+
+Write codes to generate avg_p below, from bca_2017.
+
+
+
+.small[
+
+```r
+avg_p
+```
+
+```
+# A tibble: 28 x 3
+   juris_label                    avg_p     n
+   &lt;chr&gt;                          &lt;dbl&gt; &lt;int&gt;
+ 1 Bowen Island Municipality    997030.    52
+ 2 Chilliwack Rural             107500      2
+ 3 City of Burnaby             1006059.  1995
+ 4 City of Coquitlam            777129.  3100
+ 5 City of Langley              433277.   848
+ 6 City of New Westminster      781411.   366
+ 7 City of North Vancouver      888465.  1157
+ 8 City of Pitt Meadows         579711.   323
+ 9 City of Port Coquitlam       547498.  1350
+10 City of Port Moody           725909.   708
+11 City of Richmond             891321.  4570
+12 City of Surrey               663945.  9962
+13 City of Vancouver           1190260.  9816
+14 City of White Rock           831062.   567
+15 Corporation of Delta         833177.  1586
+16 District of Maple Ridge      587795.  1996
+17 District of Mission          640000      1
+18 District of North Vancouver 1463973.  1136
+19 District of West Vancouver  2818047.   641
+20 Lower Mainland Rural        1648000      5
+21 Maple Ridge Rural            351282.    11
+22 Sechelt Rural                865000      5
+23 Township of Langley          710526.  2347
+24 University Endowment Lands  3830904.    24
+25 Village of Anmore           1627042.    25
+26 Village of Belcarra         2251050      5
+27 Village of Lions Bay        1402035     20
+28 &lt;NA&gt;                         509011.  2902
+```
+]
+
+---
+
+
+```r
+avg_p &lt;- bca_2017 %&gt;% 
+	group_by(juris_label) %&gt;% 
+	summarise(avg_p = mean(price), n=n())
+```
+
+---
+
+Write codes to generate the following figure, using avg_p.
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-10-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(avg_p, aes(juris_label, avg_p)) + 
+	geom_point(color="red", size=3, alpha=0.8)
+```
+
+---
+
+Revise the previous codes to generate the following figure.
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-12-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(avg_p, aes(juris_label, avg_p)) + 
+	geom_point(color="red", size=3, alpha=0.8) + 
+	coord_flip()
+```
+
+---
+
+Revise the previous codes to generate the following figure, using geom_segment().
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-14-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(avg_p, aes(juris_label, avg_p)) + 
+	geom_segment(aes(xend = juris_label, yend=0)) +
+	geom_point(color="red", size=3, alpha=0.8) + 
+	coord_flip()
+```
+
+---
+
+Revise the previous codes to generate the following figure.
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-16-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(avg_p, aes(juris_label, avg_p)) + 
+	geom_segment(aes(xend = juris_label, yend=0)) +
+	geom_point(color="red", size=3, alpha=0.8) + 
+	labs(x = "", y="Average Housing Price (2007)") +
+	coord_flip()
+```
+
+---
+
+Revise the previous codes to generate the following figure.
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-18-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+avg_p %&gt;% filter(!is.na(juris_label)) %&gt;% 
+ggplot(aes(juris_label, avg_p)) + 
+	geom_segment(aes(xend = juris_label, yend=0)) +
+	geom_point(color="red", size=3, alpha=0.8) + 
+	labs(x = "", y="Average Housing Price (2007)") +
+	coord_flip()
+```
+
+---
+
+Revise the previous codes to generate the following figure.
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-20-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+avg_p %&gt;% filter(!is.na(juris_label)) %&gt;% 
+ggplot(aes(juris_label, avg_p)) + 
+	geom_segment(aes(xend = juris_label, yend=0)) +
+	geom_point(color="red", size=3, alpha=0.8) + 
+	labs(x = "", y="Average Housing Price (2007)") +
+	coord_flip() +
+	theme_bw()
+```
+
+---
+
+We want to generate the following figure. How?
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-22-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+.tiny[
+
+```r
+avg_p %&gt;% filter(!is.na(juris_label)) %&gt;% 
+ggplot(aes(juris_label, avg_p)) + 
+	geom_segment(aes(xend = juris_label, yend=0)) +
+	geom_point(color="red", size=3, alpha=0.8) + 
+	labs(x = "", y="Average Housing Price (2007)") +
+	scale_y_continuous( labels=scales::label_comma(scale=0.000001, prefix="$", suffix='M') ) +
+	coord_flip() +
+	theme_bw()
+```
+]
+
+How does this work?
+
+---
+
+
+```r
+f &lt;- scales::label_comma(scale=0.000001, prefix="$", suffix='M')
+```
+
+
+```r
+f(20000000)
+```
+
+```
+[1] "$20M"
+```
+
+.tiny[
+
+```r
+avg_p %&gt;% filter(!is.na(juris_label)) %&gt;% 
+ggplot(aes(juris_label, avg_p)) + 
+	geom_segment(aes(xend = juris_label, yend=0)) +
+	geom_point(color="red", size=3, alpha=0.8) + 
+	labs(x = "", y="Average Housing Price (2007)") +
+	scale_y_continuous( labels= f ) +
+	coord_flip() +
+	theme_bw()
+```
+]
+
+---
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-27-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+We want to generate the following figure. How?
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-28-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+.tiny[
+
+```r
+avg_p %&gt;% filter(!is.na(juris_label)) %&gt;% 
+ggplot(aes(fct_reorder(juris_label, avg_p), avg_p)) + 
+	geom_segment(aes(xend = juris_label, yend=0)) +
+	geom_point(color="red", size=3, alpha=0.8) + 
+	labs(x = "", y="Average Housing Price (2007)") +
+	scale_y_continuous( labels=scales::label_comma(scale=0.000001, prefix="$", suffix='M') ) +
+	coord_flip() +
+	theme_bw()
+```
+]
+
+---
+
+### Factor
+
+
+```r
+x &lt;- factor(c("a", "b", "c"), levels=c("c", "b", "a"))
+```
+
+
+```r
+x
+```
+
+```
+[1] a b c
+Levels: c b a
+```
+
+```r
+x %&gt;% as.numeric()
+```
+
+```
+[1] 3 2 1
+```
+
+---
+
+
+```r
+tb &lt;- tibble(x, x_chr=c("a", "b", "c"), y=c(3,1,2))
+```
+
+
+```r
+tb
+```
+
+```
+# A tibble: 3 x 3
+  x     x_chr     y
+  &lt;fct&gt; &lt;chr&gt; &lt;dbl&gt;
+1 a     a         3
+2 b     b         1
+3 c     c         2
+```
+
+---
+
+
+```r
+ggplot(tb) + geom_point(aes(x,y))
+```
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-35-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(tb) + geom_point(aes(x_chr,y))
+```
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-36-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+tb &lt;- tb %&gt;% mutate(x2=fct_reorder(x, y))
+```
+
+
+```r
+tb
+```
+
+```
+# A tibble: 3 x 4
+  x     x_chr     y x2   
+  &lt;fct&gt; &lt;chr&gt; &lt;dbl&gt; &lt;fct&gt;
+1 a     a         3 a    
+2 b     b         1 b    
+3 c     c         2 c    
+```
+
+---
+
+
+```r
+tb$x
+```
+
+```
+[1] a b c
+Levels: c b a
+```
+
+```r
+tb$x2
+```
+
+```
+[1] a b c
+Levels: b c a
+```
+
+---
+
+
+```r
+ggplot(tb) + geom_point(aes(x2,y))
+```
+
+&lt;img src="13_ggplot2_4_files/figure-html/unnamed-chunk-41-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

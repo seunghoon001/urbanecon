@@ -1,0 +1,55 @@
+---
+title: "Transaction volume vs Month"
+author: "Sanghoon Lee"
+date: "3/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+Introduction
+
+We study the relationship between sale volume and month.
+
+Data
+
+We use BC Assessment housing transaction data. 
+
+```{r}
+bca <- read_rds("data/bca_sm.rds")
+```
+
+Analysis
+
+We drop observations from 2018, since we have data only until September 2018.
+```{r}
+library(lubridate)
+bca <- bca %>% filter(year(sale_date) != 2018)
+```
+
+Our quick data analysis shows that sale volume is highest in May.
+```{r}
+bca <- bca %>% 
+	mutate(Month = month(sale_date, label = TRUE))
+
+bca %>% count(Month)
+```
+
+```{r}
+bca %>% ggplot() + geom_bar(aes(Month))
+```
+
+```{r}
+bca %>% ggplot() + geom_bar(aes(Month, fill=act_use_cat), position = "fill")
+```
+
+Conclusion
+
+The analysis shows that housing transaction volumes are higher from March to August. This is true for both single family detached houses and condos. The percentage of condos among housing transactions are higher from October to December.
+

@@ -1,0 +1,55 @@
+---
+title: "Setting Up"
+author: "Seung Hoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## R
+
+Google 'Download R', choose 'https://www.r-project.org', and follow the 'CRAN' links to download R for your OS.
+
+---
+
+## RStudio
+
+Google 'Download RStudio', and follow the links.
+
+Choose 'Open Source License'.
+
+---
+
+## RStudio Set up
+
+Tools - Global Options - General: Uncheck restore .RData into workspace at start up.
+
+Tools - Global Options - General: Choose 'never' for Save workspace to .RData on exiting.
+
+Tools - Global Options - Code - Saving: Choose 'UTF-8' for default text encoding.
+
+View - Panes - Console on Right
+
+---
+
+## Class Folder with Data
+
+Download 'urbanecon.zip' from Canvas - Files menu.
+
+Unzip it onto any folder on your computer.
+
+
+
+
+

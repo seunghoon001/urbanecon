@@ -1,0 +1,101 @@
+@import url(//fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+@import url(//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,700italic,300,400,700);
+
+.title-slide .remark-slide-number {
+  display: none;
+}
+
+.inverse {
+  background-color: #0b486b;
+  color: #d6d6d6;
+  text-shadow: 0 0 0px #333;
+}
+
+.inverse h1, .inverse h2, .inverse h3 {
+  color: #ffffff;
+}
+
+.yellow_background {
+  background-color: #FBBC13;
+  color: #1d0900;
+}
+
+.green_background {
+  background-color: #45b148;
+  color: #ffffff;
+}
+
+.cherry_background {
+  background-color: #db273e;
+  color: #ffffff;
+}
+
+.brown_background {
+  background-color: #941a1d;
+  color: #ffffff;
+}
+
+.skyblue_background {
+  background-color: #1398D5;
+  color: #FBBC13;
+}
+
+.remark-slide-content {
+    font-size: 30px;
+    padding: 1em 4em 1em 4em;
+    font-family: 'Open Sans';
+}
+
+.remark-code, .remark-inline-code {
+    font-size: 28px;
+    font-family: 'Open Sans';
+}
+
+.small .remark-code { /*Change made here*/
+    font-size: 25px;
+    font-family: 'Open Sans';
+}
+
+.tiny .remark-code { /*Change made here*/
+    font-size: 22px;
+    font-family: 'Open Sans';
+}
+
+
+.small { font-size: 70% }
+
+.tiny { font-size: 50% }
+
+/* https://github.com/yihui/xaringan/issues/147 */
+
+.scroll-output {
+
+  height: 100%;
+  width: 110%;
+  overflow-x: scroll;
+  overflow-y: scroll;
+
+}
+
+.pull-left-2 {
+  float: left;
+  width: 60%;
+}
+.pull-right-1 {
+  float: right;
+  width: 36%;
+}
+
+.pull-left-1 {
+  float: left;
+  width: 36%;
+}
+.pull-right-2 {
+  float: right;
+  width: 60%;
+}
+
+.pre {
+  overflow-y: scroll;
+  overflow-x: scroll;	
+}

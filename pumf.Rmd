@@ -1,0 +1,155 @@
+---
+title: "Tidy Data"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+```
+
+```{r}
+library(tidyverse)
+```
+
+---
+
+Housing expenditure share of total incomes across CMAs?
+
+```{r}
+pumf <- read_rds("Data/2016_census_pumf_ind.rds")
+```
+
+Find relevant variables Chapter 1 of the user guide.
+
+--
+
+SHELCO, HHINC
+
+--
+
+Look up these variables in Chapter 2.
+
+---
+
+### SHELCO
+
+.inverse[Shelter cost refers to the average monthly total of all shelter expenses paid by households that own or rent their
+dwelling.]
+Shelter costs for owner households include, where applicable, mortgage payments, property taxes and
+condominium fees, along with the costs of electricity, heat, water and other municipal services. For renter
+households, shelter costs include, where applicable, the rent and the costs of electricity, heat, water and other
+municipal services.
+This variable is reported for private households in owner or tenant occupied dwellings that are not located on an
+agricultural operation operated by a member of the household.
+Value ranges from 0 to the maximum amount on the file.
+
+---
+
+.scroll-output[
+
+### TOTINC
+
+.small[
+.inverse[Total income refers to receipts from certain sources (in cash and, in some circumstances, in kind), before income
+taxes and deductions, during the reference period. The monetary receipts included are those that tend to be of a
+regular and recurring nature.]
+
+Receipts that are included as income are:
+- employment income from wages, salaries, tips, commissions and net income from self-employment (for both
+unincorporated farm and non-farm activities)
+- income from investment sources, such as dividends and interest on bonds, accounts, guaranteed investment
+certificates (GICs) and mutual funds
+- income from employer and personal pension sources, such as private pensions and payments from annuities
+and registered retirement income funds (RRIFs)
+- other regular cash income, such as child support payments received, spousal support payments (alimony)
+received and scholarships
+- income from government sources, such as social assistance, child benefits, Employment Insurance benefits, Old
+Age Security benefits, Canada Pension Plan and Quebec Pension Plan benefits and disability income.
+
+Receipts excluded from this income definition are:
+- one-time receipts, such as lottery winnings, gambling winnings, cash inheritances, lump sum insurance
+settlements and tax-free savings account (TFSA) or registered retirement savings plan (RRSP) withdrawals
+- capital gains because they are not by their nature regular and recurring. It is further assumed that they are more
+relevant to the concept of wealth than the concept of income
+- employer's contributions to registered pension plans, Canada Pension Plan, Quebec Pension Plan and
+Employment Insurance
+- voluntary inter-household transfers, imputed rent, goods and services produced for barter, and goods produced
+for own consumption.
+
+For 2016 Census, the reference period for this variable is calendar year 2015.
+
+.inverse[
+The value 88,888,888 stands for not available. The value 99,999,999 stands for not applicable and is applied to all
+persons aged less than 15 years. Otherwise, this variable could be positive, negative or zero and is a rounded
+value of the amount received by the individual in 2015. Values that would have been rounded to zero have been
+replaced by 1 or -1. In some cases, high values have been top coded and low values have been bottom coded in
+this file.
+]]]
+
+---
+
+.scroll-output[
+
+### Top coding
+
+See section H.2 of the user guide.
+
+.small[
+
+H.2 Rounding and adjustment of extreme values for income, shelter costs, child care expenses, earnings and losses
+
+In planning this microdata file, it was deemed essential that the procedures used make it impossible to
+identify an individual in the population from their income or from any other quantitative data. To do this,
+income, shelter costs, child care expenses, earnings and losses for the individuals selected to be part of
+this microdata file were subjected to the following rounding and extreme values adjustment procedures.
+These procedures minimize the impact on quality.
+
+First, since a very large portion of the incomes in the file are from tax files, all values for these variables
+require rounding. Some income variables were randomly rounded with a base of 100, namely INVST,
+RETIR, CHDBN, CQPPB, GOVTI, GTRFS, OASGI and EICBN. Others were rounded with a base of 1,000:
+TOTINC, WAGES, SEMPI, OTINC, TOTINC_AT, EMPIN, INCTAX and MRKINC. For the CAPGN variable,
+a base of 100 was used for values between -5,000 and 5,000 and a base of 1,000 was used for other
+values. If the value of any variable was higher than 100,000, the rounding base used was 10,000. The
+rounding base for the VALUE variable was set to 10,000, while that for the CHLDC and SHELCO variables
+was set to 100. If a value higher than 0 would have been rounded to 0 through the random procedure, the
+value 1 was assigned instead. Similarly, when a value lower than 0 would have been rounded to 0, the
+value -1 was assigned. This was done to maintain the applicability condition for income sources and to
+preserve the same number of negative, null and positive values before and after random rounding. Since
+the random rounding was done independently by variable, some relations between income sources are no
+longer valid. However, this rounding technique maintains the statistical nature of the data.
+
+Second, large income, earnings, expenses and shelter costs were top-coded to eliminate all possibility of
+disclosure. Values for shelter costs (VALUE and SHELCO) were top-coded when they were higher than a
+threshold. .inverse[This threshold is the weighted 90th percentile for an individual’s geographical region rounded 
+down using the rounding bases given in the previous paragraph. The replacement value for the top-coded
+values was set to the weighted average of the top-coded values for the geographical region.] The thresholds and the replacement values were calculated from the set of all Census long-form respondents. Thus,
+calculating the weighted sum of all values of a particular variable in a given geographical region yields a
+sum comparable to the sum one would obtain if no top-coding had been done on the data. For income,
+earnings and expenses, values higher than the rounded down 99th weighted percentile for an individual’s
+respective area and gender were top-coded. Some supplementary top-coding was necessary to eliminate
+the possibility of residual disclosure. Also, some negative values, i.e., those lower than a threshold, were
+down-coded using the standard method. The replacement value is the threshold.
+
+]]
+
+
+---
+
+```{r}
+pumf %>% filter(TOTINC < 80000000) %>% 
+	group_by(CMA) %>% summarise(avg_shelco=weighted.mean(SHELCO, WEIGHT) * 12, avg_totinc=weighted.mean(TOTINC, WEIGHT)) %>% 
+	mutate(shelco_share = avg_shelco/avg_totinc)
+```
+

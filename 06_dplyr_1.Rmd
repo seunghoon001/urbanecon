@@ -1,0 +1,366 @@
+---
+title: "dplyr I"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA)
+library(kableExtra)
+```
+
+select()
+
+filter()
+
+arrange()
+
+mutate()
+
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r results='hide'}
+tb <- tibble( a=c(2,1,3), b=c("a", "b", "c"), c=c("y","y","x") )
+tb
+```
+
+```{r echo=FALSE}
+tb %>% kable(align = "c") %>% column_spec(1:3, width = "5em")
+```
+
+---
+
+## select()
+
+```{r eval=FALSE}
+? select
+```
+
+--
+
+Choose variables from a tibble.
+
+**Usage**
+
+select(.data, ...)
+
+... variables to select
+
+---
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+select(tb, a, b)
+```
+]
+
+---
+
+## Pipe %>% 
+
+* `x %>% f(...)` is equivalent to `f(x,...)`.
+
+--
+
+.pull-left[
+```{r}
+select(tb, a, b)
+```
+]
+
+.pull-right[
+```{r}
+tb %>% select(a,b)
+```
+]
+
+---
+
+## filter()
+
+Return rows with matching conditions.
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+filter(tb, a >= 2, c == "x")
+```
+]
+
+---
+
+* `x %>% f(...)` is equivalent to `f(x,...)`.
+
+.pull-left[
+```{r}
+filter(tb, a >= 2, c == "x")
+```
+]
+
+.pull-right[
+```{r}
+tb %>% filter( a >= 2, c == "x")
+```
+]
+
+---
+
+## Why Pipe %>% ?
+
+--
+
+Easier to read.
+.pull-left[
+```{r}
+filter(tb, a >= 2, c == "x")
+```
+]
+
+.pull-right[
+```{r}
+tb %>% filter( a >= 2, c == "x")
+```
+]
+
+---
+
+Chain multiple operations.
+
+Suppose you want to do the following to tb sequently:
+
+1. select columns a and c.
+2. choose rows such that a>= 2 and c == "x".
+
+--
+
+.pull-left[
+```{r}
+temp <- select(tb, a, c)
+filter(temp, a >= 2, c == "x")
+```
+]
+
+--
+
+.pull-right[
+```{r}
+tb %>% 
+  select(a, c) %>% 
+  filter(a >= 2, c == "x")
+```
+]
+
+---
+
+## arrange()
+
+Sort rows by variables
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+tb %>% arrange(c, a)
+```
+]
+
+---
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+tb %>% arrange(desc(c), a)
+```
+]
+
+---
+
+## mutate()
+
+Create variables
+--
+.pull-left[
+```{r}
+tb
+```
+]
+.pull-right[
+```{r}
+tb %>% mutate(d = 3*a, 
+              e = paste0(b, c) )
+```
+]
+
+---
+
+## Task
+
+From the bca_sm dataset, generate a tibble of housing transactions satisfying the following:
+
+- Create a new column called 'sale_year' containing the year of sale. (Use 'year()' function in 'lubridate' package.)
+- Sold in 2017.
+- Condo or townhouse (i.e., "Strata Res" in act_use_cat)
+- Price is greater than 5 million dollars.
+- Contain only the following columns: roll_num, sale_year, price, neigh_label.
+- Sorted in the descending order of price.
+
+---
+
+Restart R
+
+--
+
+Load libraries.
+
+--
+
+```{r}
+library(lubridate)
+library(tidyverse)
+```
+
+--
+
+Load the bca_sm.rds.
+
+--
+
+```{r}
+bca <- read_rds("Data/bca_sm.rds")
+```
+
+--
+
+Browse data to identify relevant columns.
+
+```{r eval=FALSE}
+View(bca)
+```
+
+---
+
+Create a new column called 'sale_year' containing the year of sale. (Use 'year()' function in 'lubridate' package.)
+
+--
+
+```{r}
+temp <- bca %>% mutate(sale_year = year(sale_date))
+```
+
+--
+
+Confirm that 'sale_year' column is created.
+```{r eval=FALSE}
+temp %>% View
+```
+
+---
+
+- Sold in 2017.
+- Condo or townhouse (i.e., "Strata Res" in act_use_cat)
+- Price is greater than 5 million dollars.
+
+--
+
+```{r}
+temp <- temp %>% filter(
+  sale_year == 2017, 
+  act_use_cat == "Strata Res", 
+  price>5000000 )
+```
+
+--
+
+Confirm that they are filtered correctly.
+```{r eval=FALSE}
+temp %>% View
+```
+
+---
+
+Contain only the following columns: roll_num, sale_year, price, neigh_label.
+
+```{r}
+temp <- temp %>% select(roll_num, sale_year, price, neigh_label)
+```
+
+--
+
+Confirm the result:
+```{r}
+temp
+```
+
+---
+
+Sorted in the descending order of price.
+
+--
+
+```{r}
+temp %>% arrange(desc(price))
+```
+
+---
+
+```{r eval=FALSE}
+temp <- bca %>% mutate(sale_year = year(sale_date))
+
+temp <- temp %>% filter(
+  sale_year == 2017, 
+  act_use_cat == "Strata Res", 
+  price>5000000 )
+
+temp <- temp %>% 
+  select(roll_num, sale_year, price, neigh_label)
+
+temp %>% arrange(desc(price))
+```
+
+Try rewriting the codes using the pipe, without using a temp object!
+
+---
+
+```{r eval=FALSE}
+bca %>% mutate(sale_year = year(sale_date)) %>% 
+  filter(
+    sale_year == 2017, 
+    act_use_cat == "Strata Res", 
+    price>5000000 ) %>% 
+  select(roll_num, sale_year, price, neigh_label) %>% 
+  arrange(desc(price))  
+```
+

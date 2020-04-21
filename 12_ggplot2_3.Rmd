@@ -1,0 +1,338 @@
+---
+title: "ggplot2 - 3"
+subtitle: "Geometries"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+```
+
+Scatter plot
+
+- Overplotting - alpha, jitter. 
+- labeling points
+
+Bar plots
+
+Histogram
+
+line chart
+
+---
+
+```{r}
+library(tidyverse)
+``` 
+
+---
+
+### Scatter plot
+
+In the last class, we learned how to deal with too many points using alpha aesthetic, limits arguments in scale functions, and log scales - [Link](https://sleeubc.github.io/c407_2020/Lecture_slides/11_ggplot2_2.html#28)
+
+---
+ 
+### jitter
+
+```{r}
+tb <- tibble(x= c(5,5,5,5,5, 3,3,3, 1), y= c(5,5,5,5,5, 3,3,3, 1))
+```
+
+```{r}
+tb %>% glimpse
+```
+
+---
+
+```{r}
+ggplot(tb, aes(x,y)) + geom_point()
+```
+
+---
+
+```{r}
+ggplot(tb, aes(x,y)) + geom_point(position = "jitter")
+```
+
+---
+
+```{r}
+ggplot(tb, aes(x,y)) + geom_point(color="grey", size = 2) + 
+  geom_point(position = "jitter")
+```
+
+---
+
+```{r}
+ggplot(tb, aes(x,y)) + geom_point(color="grey", size = 2) + 
+  geom_point(position = position_jitter(width = 0.1))
+```
+
+---
+
+```{r}
+ggplot(tb, aes(x,y)) + geom_point(color="grey", size = 2) + 
+  geom_point(position = position_jitter(width = 0.1, height = 0.1))
+```
+
+---
+
+```{r}
+ggplot(tb, aes(x,y)) + geom_point(color="grey", size = 2) + 
+  geom_point(position = position_jitter(width = 0.2, height = 0.2))
+```
+
+---
+
+```{r}
+ggplot(tb, aes(x,y)) + geom_point(color="grey", size = 2) + 
+  geom_jitter(width = 0.2, height = 0.2)
+```
+
+---
+
+### Labels
+
+```{r}
+library(gapminder)
+gapminder_2007 <- gapminder %>% filter(year == 2007)
+```
+
+---
+
+```{r}
+ggplot(gapminder_2007) + geom_point(aes(gdpPercap, lifeExp))
+```
+
+---
+
+```{r}
+ggplot(gapminder_2007) + geom_point(aes(gdpPercap, lifeExp)) + 
+  scale_x_log10()
+```
+
+---
+
+```{r}
+ggplot(gapminder_2007, aes(gdpPercap, lifeExp)) + 
+  geom_point() + geom_text(aes(label=country))+ scale_x_log10()
+```
+
+---
+
+```{r}
+gapminder_2007_big <- gapminder_2007 %>% top_n(20, pop)
+```
+
+```{r}
+ggplot(gapminder_2007, aes(gdpPercap, lifeExp)) + geom_point() + 
+  geom_text(aes(label=country), gapminder_2007_big)+ scale_x_log10()
+```
+
+---
+
+```{r}
+ggplot(gapminder_2007, aes(gdpPercap, lifeExp)) + geom_point() + 
+  geom_label(aes(label=country), gapminder_2007_big)+ scale_x_log10()
+```
+
+---
+
+```{r}
+ggplot(gapminder_2007, aes(gdpPercap, lifeExp)) + geom_point() + 
+  ggrepel::geom_text_repel(aes(label=country), gapminder_2007_big) + 
+  scale_x_log10()
+```
+
+---
+
+```{r}
+ggplot(gapminder_2007, aes(gdpPercap, lifeExp)) + geom_point() + 
+  ggrepel::geom_label_repel(aes(label=country), gapminder_2007_big) + 
+  scale_x_log10()
+```
+
+---
+
+### Barchart
+
+```{r}
+bca_2017 <- read_rds("Data/bca_sm.rds") %>% 
+  filter(lubridate::year(sale_date) == 2017)
+```
+
+---
+
+```{r}
+aa_n <- bca_2017 %>% count(aa_label)
+```
+
+```{r}
+aa_n
+```
+
+---
+
+```{r}
+ggplot(aa_n) + geom_col(aes(aa_label, n))
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + geom_bar(aes(aa_label))
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + geom_bar(aes(aa_label)) + coord_flip()
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + geom_bar(aes(aa_label, fill=act_use_cat)) + 
+  coord_flip()
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + 
+  geom_bar(aes(aa_label, fill=act_use_cat), position = "dodge") + 
+  coord_flip()
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + 
+  geom_bar(aes(aa_label, fill=act_use_cat), position = "fill") + coord_flip()
+```
+
+---
+
+### Histogram
+
+```{r}
+ggplot(bca_2017) + geom_histogram(aes(price))
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + geom_histogram(aes(price)) + 
+  scale_x_continuous(limits = c(0,6000000))
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price), binwidth = 1000) + 
+  scale_x_continuous(limits = c(0,6000000))
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price), binwidth = 1000) + 
+  scale_x_continuous(limits = c(400000,450000))
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price), binwidth = 100000) + 
+  scale_x_continuous(limits = c(0,6000000))
+```
+
+---
+
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price, fill=act_use_cat), binwidth = 100000) + 
+  scale_x_continuous(limits = c(0,6000000))
+```
+
+---
+
+.small[
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price, fill=act_use_cat), binwidth = 100000, position = "dodge") + 
+  scale_x_continuous(limits = c(0,6000000))
+```
+]
+
+---
+
+.small[
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price, fill=act_use_cat), binwidth = 100000, position = "fill") + 
+  scale_x_continuous(limits = c(0,10000000))
+```
+]
+
+---
+
+.small[
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price, fill=act_use_cat), binwidth = 1000000, position = "fill") + 
+  scale_x_continuous(limits = c(0,10000000))
+```
+]
+
+---
+
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price, fill=aa_label), binwidth = 100000) + 
+  scale_x_continuous(limits = c(0,6000000))
+```
+
+---
+
+"dodge" does not work well with many groups.
+
+.small[
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price, fill=aa_label), binwidth = 100000, position = "dodge") + 
+  scale_x_continuous(limits = c(0,4000000))
+```
+]
+
+---
+
+.small[
+```{r}
+ggplot(bca_2017) + 
+  geom_histogram(aes(price, fill=aa_label), binwidth = 1000000, position = "fill") + 
+  scale_x_continuous(limits = c(0,10000000))
+```
+]
+
+---
+
+### line plots
+
+We covered line plots in the last class [link](https://sleeubc.github.io/c407_2020/Lecture_slides/11_ggplot2_2.html#18).

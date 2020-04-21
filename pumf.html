@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>Tidy Data</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sanghoon Lee" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="c407_slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Tidy Data
+### Sanghoon Lee
+### 26 February, 2020
+
+---
+
+
+
+
+
+```r
+library(tidyverse)
+```
+
+---
+
+Housing expenditure share of total incomes across CMAs?
+
+
+```r
+pumf &lt;- read_rds("Data/2016_census_pumf_ind.rds")
+```
+
+Find relevant variables Chapter 1 of the user guide.
+
+--
+
+SHELCO, TOTINC
+
+--
+
+Look up these variables in Chapter 2.
+
+---
+
+### SHELCO
+
+.inverse[Shelter cost refers to the average monthly total of all shelter expenses paid by households that own or rent their
+dwelling.]
+Shelter costs for owner households include, where applicable, mortgage payments, property taxes and
+condominium fees, along with the costs of electricity, heat, water and other municipal services. For renter
+households, shelter costs include, where applicable, the rent and the costs of electricity, heat, water and other
+municipal services.
+This variable is reported for private households in owner or tenant occupied dwellings that are not located on an
+agricultural operation operated by a member of the household.
+Value ranges from 0 to the maximum amount on the file.
+
+---
+
+.scroll-output[
+
+### TOTINC
+
+.small[
+.inverse[Total income refers to receipts from certain sources (in cash and, in some circumstances, in kind), before income
+taxes and deductions, during the reference period. The monetary receipts included are those that tend to be of a
+regular and recurring nature.]
+
+Receipts that are included as income are:
+- employment income from wages, salaries, tips, commissions and net income from self-employment (for both
+unincorporated farm and non-farm activities)
+- income from investment sources, such as dividends and interest on bonds, accounts, guaranteed investment
+certificates (GICs) and mutual funds
+- income from employer and personal pension sources, such as private pensions and payments from annuities
+and registered retirement income funds (RRIFs)
+- other regular cash income, such as child support payments received, spousal support payments (alimony)
+received and scholarships
+- income from government sources, such as social assistance, child benefits, Employment Insurance benefits, Old
+Age Security benefits, Canada Pension Plan and Quebec Pension Plan benefits and disability income.
+
+Receipts excluded from this income definition are:
+- one-time receipts, such as lottery winnings, gambling winnings, cash inheritances, lump sum insurance
+settlements and tax-free savings account (TFSA) or registered retirement savings plan (RRSP) withdrawals
+- capital gains because they are not by their nature regular and recurring. It is further assumed that they are more
+relevant to the concept of wealth than the concept of income
+- employer's contributions to registered pension plans, Canada Pension Plan, Quebec Pension Plan and
+Employment Insurance
+- voluntary inter-household transfers, imputed rent, goods and services produced for barter, and goods produced
+for own consumption.
+
+For 2016 Census, the reference period for this variable is calendar year 2015.
+
+.inverse[
+The value 88,888,888 stands for not available. The value 99,999,999 stands for not applicable and is applied to all
+persons aged less than 15 years. Otherwise, this variable could be positive, negative or zero and is a rounded
+value of the amount received by the individual in 2015. Values that would have been rounded to zero have been
+replaced by 1 or -1. In some cases, high values have been top coded and low values have been bottom coded in
+this file.
+]]]
+
+---
+
+.scroll-output[
+
+### Top coding
+
+See section H.2 of the user guide.
+
+.small[
+
+H.2 Rounding and adjustment of extreme values for income, shelter costs, child care expenses, earnings and losses
+
+In planning this microdata file, it was deemed essential that the procedures used make it impossible to
+identify an individual in the population from their income or from any other quantitative data. To do this,
+income, shelter costs, child care expenses, earnings and losses for the individuals selected to be part of
+this microdata file were subjected to the following rounding and extreme values adjustment procedures.
+These procedures minimize the impact on quality.
+
+First, since a very large portion of the incomes in the file are from tax files, all values for these variables
+require rounding. Some income variables were randomly rounded with a base of 100, namely INVST,
+RETIR, CHDBN, CQPPB, GOVTI, GTRFS, OASGI and EICBN. Others were rounded with a base of 1,000:
+TOTINC, WAGES, SEMPI, OTINC, TOTINC_AT, EMPIN, INCTAX and MRKINC. For the CAPGN variable,
+a base of 100 was used for values between -5,000 and 5,000 and a base of 1,000 was used for other
+values. If the value of any variable was higher than 100,000, the rounding base used was 10,000. The
+rounding base for the VALUE variable was set to 10,000, while that for the CHLDC and SHELCO variables
+was set to 100. If a value higher than 0 would have been rounded to 0 through the random procedure, the
+value 1 was assigned instead. Similarly, when a value lower than 0 would have been rounded to 0, the
+value -1 was assigned. This was done to maintain the applicability condition for income sources and to
+preserve the same number of negative, null and positive values before and after random rounding. Since
+the random rounding was done independently by variable, some relations between income sources are no
+longer valid. However, this rounding technique maintains the statistical nature of the data.
+
+Second, large income, earnings, expenses and shelter costs were top-coded to eliminate all possibility of
+disclosure. Values for shelter costs (VALUE and SHELCO) were top-coded when they were higher than a
+threshold. .inverse[This threshold is the weighted 90th percentile for an individual’s geographical region rounded 
+down using the rounding bases given in the previous paragraph. The replacement value for the top-coded
+values was set to the weighted average of the top-coded values for the geographical region.] The thresholds and the replacement values were calculated from the set of all Census long-form respondents. Thus,
+calculating the weighted sum of all values of a particular variable in a given geographical region yields a
+sum comparable to the sum one would obtain if no top-coding had been done on the data. For income,
+earnings and expenses, values higher than the rounded down 99th weighted percentile for an individual’s
+respective area and gender were top-coded. Some supplementary top-coding was necessary to eliminate
+the possibility of residual disclosure. Also, some negative values, i.e., those lower than a threshold, were
+down-coded using the standard method. The replacement value is the threshold.
+
+]]
+
+
+---
+
+
+```r
+pumf %&gt;% 
+	group_by(CMA) %&gt;% summarise(avg_shelco=weighted.mean(SHELCO, WEIGHT) * 12, avg_totinc=weighted.mean(TOTINC, WEIGHT)) %&gt;% 
+	mutate(shelco_share = avg_shelco/avg_totinc)
+```
+
+```
+# A tibble: 24 x 4
+   CMA                                        avg_shelco avg_totinc shelco_share
+   &lt;ord&gt;                                           &lt;dbl&gt;      &lt;dbl&gt;        &lt;dbl&gt;
+ 1 Halifax                                        16251.  20040164.     0.000811
+ 2 Moncton – Saint John                           13440.  21736535.     0.000618
+ 3 Québec                                         13757.  18188422.     0.000756
+ 4 Montréal                                       15083.  20595136.     0.000732
+ 5 Sherbrooke – Trois-Rivières                    11802.  19546734.     0.000604
+ 6 Ottawa – Gatineau                              18005.  21968315.     0.000820
+ 7 Oshawa                                         19960.  22693949.     0.000880
+ 8 Toronto                                        21719.  21082217.     0.00103 
+ 9 Hamilton                                       18191.  20656048.     0.000881
+10 St. Catharines – Niagara                       15156.  18978580.     0.000799
+11 Kitchener – Cambridge – Waterloo               17619.  22856351.     0.000771
+12 London                                         15648.  21376877.     0.000732
+13 Windsor                                        14268.  21790417.     0.000655
+14 Brantford – Guelph – Barrie                    18298.  22722825.     0.000805
+15 Kingston – Peterborough                        16281.  20169409.     0.000807
+16 Greater Sudbury / Grand Sudbury – Thunder~     14940.  20352575.     0.000734
+17 Winnipeg                                       15552.  22106444.     0.000703
+18 Regina – Saskatoon                             18047.  23009430.     0.000784
+19 Calgary                                        21334.  23362590.     0.000913
+20 Edmonton                                       20132.  22788812.     0.000883
+21 Vancouver                                      21091.  18716016.     0.00113 
+22 Victoria                                       18485.  18137564.     0.00102 
+23 Kelowna – Abbotsford                           18628.  20615750.     0.000904
+24 Other census metropolitan areas, census a~     13787.  20533004.     0.000671
+```
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

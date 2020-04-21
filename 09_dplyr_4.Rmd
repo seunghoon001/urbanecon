@@ -1,0 +1,272 @@
+---
+title: "dplyr 4"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA)
+options(tibble.print_max = Inf)
+library(kableExtra)
+```
+
+Logical operators
+
+- ==
+- !=
+- &
+- |
+- %in%
+
+Group_by() - mutate()
+
+nth()
+
+lag()
+
+
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+tb <- tibble(a=c(1,1,1,2,2,2), b=c(2,3,3,3,4,4))
+```
+
+```{r}
+tb
+```
+
+---
+
+.pull-left[
+```{r}
+tb
+```
+```{r}
+tb %>% filter(2*a==b)
+```
+]
+
+.pull-right[
+```{r}
+tb %>% filter(a != 2)
+```
+```{r}
+tb %>% filter(b %in% c(1,3))
+```
+]
+
+---
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+tb %>% filter(a==1 & b==2)
+```
+```{r}
+tb %>% filter(a==1 | b ==2)
+```
+]
+
+---
+
+### group_by() - mutate()
+
+.pull-left[
+```{r}
+tb
+```
+]
+.pull-right[
+```{r}
+tb %>% group_by(a) %>% 
+  summarise(b_1 = nth(b, 1))
+```
+]
+
+---
+
+.pull-left[
+```{r}
+tb
+```
+]
+.pull-right[
+```{r}
+tb %>% group_by(a) %>% 
+  mutate(b_1 = nth(b,1))
+```
+]
+
+---
+
+.pull-left-1[
+```{r}
+tb
+```
+]
+.pull-right-2[
+```{r}
+tb %>% group_by(a) %>% 
+  mutate(b_index = b/nth(b, 1))
+```
+]
+
+---
+
+### lag()
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+tb %>% mutate(lag_b = lag(b))
+```
+
+]
+
+---
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+tb %>% mutate(diff_b = b - lag(b))
+```
+]
+
+---
+
+.pull-left[
+```{r}
+tb %>% 
+  group_by(a) %>% 
+  mutate(lag_b = lag(b))
+```
+]
+
+.pull-right[
+```{r}
+tb %>% 
+  group_by(a) %>% 
+  mutate(diff_b = b - lag(b))
+```
+]
+
+---
+
+.pull-left-1[
+```{r}
+tb %>% 
+  group_by(a) %>% 
+  mutate(lag_b = lag(b))
+```
+]
+
+.pull-right-2[
+```{r}
+tb %>% 
+  group_by(a) %>% 
+  mutate(growth_b = (b - lag(b)) / lag(b) )
+```
+]
+
+---
+
+### Application
+
+```{r}
+bca <- read_rds("Data/bca_sm.rds")
+```
+
+```{r}
+avg_price <- bca %>% 
+  mutate(sale_year = lubridate::year(sale_date)) %>% 
+  group_by(act_use_cat, sale_year) %>% 
+  summarise(avg_price = mean(price))
+```
+
+```{r}
+avg_price
+```
+
+---
+
+```{r}
+ggplot(avg_price, aes(sale_year, avg_price, color=act_use_cat)) + 
+  geom_line() + 
+  geom_point()
+```
+
+---
+
+```{r}
+price_index <- avg_price %>% 
+  mutate(
+    first = nth(avg_price, 1),
+    price_index = avg_price / nth(avg_price, 1))
+
+price_index
+```
+
+---
+
+```{r}
+ggplot(price_index, aes(sale_year, price_index, color=act_use_cat)) + 
+  geom_line() + geom_point()
+```
+
+---
+
+```{r}
+price_index <- avg_price %>% 
+  mutate(price_index = avg_price / nth(avg_price, 11))
+```
+
+```{r}
+ggplot(price_index, aes(sale_year, price_index, color=act_use_cat)) + 
+  geom_line() + geom_point()
+```
+
+---
+
+```{r}
+price_growth <- avg_price %>% 
+  group_by(act_use_cat) %>% 
+  mutate( price_growth = (avg_price - lag(avg_price)) / lag(avg_price) )
+
+price_growth
+```
+
+---
+
+```{r}
+ggplot(price_growth, aes(sale_year, price_growth, color=act_use_cat)) + 
+  geom_line() + geom_point()
+```
+

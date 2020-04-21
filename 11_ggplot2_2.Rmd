@@ -1,0 +1,293 @@
+---
+title: "ggplot2 - 2"
+subtitle: "Aesthetic"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+```
+
+aesthetics
+
+- color
+- size
+- shape
+- fill
+- linetype
+
+attribute
+
+scale functions
+
+---
+
+```{r}
+library(lubridate)
+library(tidyverse)
+```
+
+```{r}
+bca <- read_rds("Data/bca_sm.rds")
+```
+
+---
+
+```{r}
+bca %>% count(aa_id, aa_label, sort=TRUE)
+```
+
+---
+
+```{r}
+by_aa <- bca %>% 
+  filter(! is.na(aa_label)) %>% 
+  group_by(aa_label) %>% 
+  summarise(
+    avg_floorarea = mean(floorarea, na.rm = TRUE), 
+    avg_price=mean(price), 
+    n=n())
+```
+
+---
+
+```{r}
+is.na(c(NA, 1, 2))
+```
+
+```{r}
+! is.na(c(NA, 1, 2))
+```
+
+```{r}
+tibble(x=c(NA,1,2)) %>% filter(!is.na(x))
+```
+
+---
+
+```{r}
+mean(c(1,3,NA))
+```
+
+```{r}
+mean(c(1,3,NA), na.rm = TRUE)
+```
+
+---
+
+```{r eval=FALSE}
+by_aa
+```
+```{r echo=FALSE}
+by_aa %>% kable()
+```
+
+
+---
+
+```{r}
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price))
+```
+
+---
+
+```{r}
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price, color=aa_label))
+```
+
+---
+
+.small[
+```{r}
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label))
+```
+]
+
+---
+
+.small[
+```{r}
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label, size=n))
+```
+]
+
+---
+
+.small[
+```{r}
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, alpha=n, size=n))
+```
+]
+
+---
+
+```{r}
+ggplot(by_aa) + geom_col(aes(aa_label, n))
+```
+
+---
+
+```{r}
+ggplot(by_aa) + geom_col(aes(aa_label, n)) + coord_flip()
+```
+
+---
+
+```{r}
+ggplot(by_aa) + geom_col(aes(aa_label, n, fill=aa_label)) + coord_flip()
+```
+
+---
+
+
+.small[
+```{r}
+by_aa_yr <- bca %>% 
+  filter(! is.na(aa_label)) %>% 
+  group_by(aa_label, year=year(sale_date)) %>% 
+  summarise(avg_price = mean(price), n=n())
+```
+]
+
+```{r eval=FALSE}
+by_aa_yr
+```
+
+.scroll-output[
+```{r echo=FALSE}
+by_aa_yr %>% kable()
+```
+]
+
+---
+
+```{r}
+ggplot(by_aa_yr) + geom_line(aes(year, avg_price, color=aa_label))
+```
+
+---
+
+.small[
+```{r}
+ggplot(by_aa_yr) + geom_line(aes(year, avg_price, color=aa_label, linetype=aa_label))
+```
+]
+
+---
+
+### Attributes
+
+```{r}
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price, color="blue"))
+```
+
+---
+
+.small[
+```{r}
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price, color="Sanghoon"))
+```
+]
+
+---
+
+```{r}
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price), color="blue")
+```
+
+---
+
+```{r}
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price), color="blue", size=5)
+```
+
+---
+
+```{r}
+ggplot(mpg) + geom_point(aes(cyl, cty))
+```
+
+---
+
+```{r}
+ggplot(mpg) + geom_point(aes(cyl, cty), position = "jitter")
+```
+
+---
+
+```{r}
+van17 <- bca %>% filter(aa_id == "09", year(sale_date) == 2017)
+ggplot(van17) + geom_point(aes(floorarea, price))
+```
+
+---
+
+```{r}
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1)
+```
+
+---
+
+### Scale functions
+
+.small[
+```{r}
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label, size=n))
+```
+]
+
+---
+
+.small[
+```{r}
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label, size=n)) + 
+  scale_color_discrete("") + scale_shape("") + 
+  scale_size(guide='none')
+```
+]
+
+---
+
+```{r}
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1)
+```
+
+---
+
+```{r}
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1) +
+  scale_x_continuous(limits=c(200,3000)) +
+  scale_y_continuous(limits=c(0,5000000))
+```
+
+---
+
+```{r}
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1) +
+  scale_x_log10() + scale_y_log10()
+```
+
+---
+
+```{r}
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1) +
+  scale_x_log10(breaks=c(0, 500, 750, 1000, 1250, 1500, 2000, 3000, 6000, 10000 )) + scale_y_log10()
+```

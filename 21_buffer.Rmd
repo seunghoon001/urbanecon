@@ -1,0 +1,183 @@
+---
+title: "Buffer Analysis"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+set.seed(0)
+```
+
+Suppose you want to find all housing transactions within 1km from each skytrain station on Millenium line and Expo line.
+
+1. Obtain skytrain staion locations. Load them into R. 
+1. Load housing transaction locations into R.
+1. Create 1km buffers from the skytrain station locations.
+1. Spatial join the two datasets.
+
+---
+
+Go to [Abacus Dataverse Network website](http://dvn.library.ubc.ca/). (Google "Abacus UBC")
+
+Click "Log In"
+
+Choose "UBC" in affiliated user login, and click Login.
+
+Search for "Skytrain"
+
+Click "TRANSLINK TRANSIT GIS DATA, 09 MARCH 2010"
+
+Click "Data & Analysis" tab.
+
+Download and unzip "SkyTrain" and "CanadaLine" data into the data folder. (We will use CanadaLine in a separate practice.)
+
+---
+
+```{r}
+library(sf)
+library(tidyverse)
+```
+
+```{r}
+SkyTstation <- st_read("Data/SkyTrain/SkyTStation.shp")
+```
+
+---
+
+```{r}
+SkyTstation
+```
+
+---
+
+```{r}
+SkyTstation <- SkyTstation %>% select(PL_NAME)
+```
+
+```{r}
+SkyTstation
+```
+
+---
+
+```{r}
+ggplot() + 
+	geom_sf(data=SkyTstation) + 
+	geom_sf_text(aes(label=PL_NAME), SkyTstation, size=3)
+```
+
+---
+
+```{r}
+bca <- read_rds("Data/bca_sm.rds") %>% 
+	sample_frac(0.01) %>% 
+	select(aa_id, roll_num, lon, lat)
+```
+
+```{r}
+bca_sf <- bca %>% 
+	st_as_sf(coords= c("lon", "lat"), crs=4326)
+```
+
+---
+
+```{r}
+ggplot() + 
+	geom_sf(data=bca_sf, color="grey") + 
+	geom_sf(data=SkyTstation, color="red")
+```
+
+---
+
+We want to find all housing transactions that are within 1km from a skytrain station.
+
+We will create buffers of 1000 meters from Skytrain stations.
+
+We have to make sure that the CRS for SkyTstation uses meter as distance unit.
+
+```{r}
+st_crs(SkyTstation)
+```
+
+If not, you have to convert CRS using st_transform(crs=26910)
+
+---
+
+```{r}
+SkyTstation_buffer <- SkyTstation %>% st_buffer(dist = 1000)
+```
+
+---
+
+```{r}
+ggplot() +
+	geom_sf(data=bca_sf, color="grey") +
+	geom_sf(data=SkyTstation, color="red") +
+	geom_sf(data=SkyTstation_buffer, color="blue", fill=NA) +
+	coord_sf(crs=4326, xlim = c(-123.15, -122.8), ylim=c(49.16, 49.3))
+```
+
+---
+
+### Spatial Join
+
+```{r}
+SkyTstation_buffer <- SkyTstation_buffer %>% 
+	st_transform(crs=st_crs(bca_sf))
+```
+
+```{r}
+bca_stn <- bca_sf %>% st_join(SkyTstation_buffer)
+```
+
+---
+
+.tiny[
+```{r}
+bca_stn
+```
+]
+
+Some transactions appear multiple times when they are within 1km from multiple stations. 
+
+---
+
+```{r}
+ggplot() +
+	geom_sf(aes(color=PL_NAME), data=bca_stn, alpha=0.3) +
+	scale_color_discrete(guide=FALSE) +
+	coord_sf(xlim = c(-123.15, -122.8), ylim=c(49.16, 49.3))
+```
+
+---
+
+```{r}
+bca_stn <- bca_stn %>% st_drop_geometry()
+```
+
+---
+
+```{r}
+bca_stn %>% count(PL_NAME, sort=TRUE)
+```
+
+---
+
+Transactions that are within 1km of any station on Millenium line and Expo line.
+
+```{r}
+bca_stn %>% filter(!is.na(PL_NAME)) %>% select(-PL_NAME) %>% unique()
+```
+

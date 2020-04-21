@@ -1,0 +1,2370 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>Spatial Join - Zoning</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sanghoon Lee" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="c407_slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Spatial Join - Zoning
+### Sanghoon Lee
+### 09 March, 2020
+
+---
+
+
+
+
+Where to obtain spatial data - shapefile, lon and lat
+
+st_read()
+
+st_as_sf()
+
+st_crs()
+
+st_transform()
+
+st_join()
+
+---
+
+
+```r
+library(sf)
+library(tidyverse)
+```
+
+---
+
+### Shapefile
+
+Most spatial data are available in shapefile format.
+
+Go to [Open Data Portal Vancouver](https://opendata.vancouver.ca/pages/home/)
+
+Search 'Zoning' - Choose 'Zoning districts and labels'
+
+Click Export - Shapefile - Whole Dataset (Note WGS84 (EPSG 4326)).
+
+Extract the zip file into the Data folder.
+
+Note that a shapefile is a group of files sharing the same name but having different file extensions. You need all of them.
+
+---
+
+Use st_read() to read a shapefile and [its auxiliary files](https://gisgeography.com/arcgis-shapefile-files-types-extensions/) into R.
+
+.tiny[
+
+```r
+zoning &lt;- st_read("Data/zoning-districts-and-labels/zoning-districts-and-labels.shp")
+```
+
+```
+Reading layer `zoning-districts-and-labels' from data source `C:\Users\leesh\Documents\Dropbox\teaching\C407\C407-2020\Data\zoning-districts-and-labels\zoning-districts-and-labels.shp' using driver `ESRI Shapefile'
+Simple feature collection with 1361 features and 2 fields
+geometry type:  POLYGON
+dimension:      XY
+bbox:           xmin: -123.2248 ymin: 49.19952 xmax: -123.0233 ymax: 49.31617
+epsg (SRID):    4326
+proj4string:    +proj=longlat +datum=WGS84 +no_defs
+```
+]
+
+---
+
+.tiny[
+
+```r
+zoning %&gt;% head()
+```
+
+```
+Simple feature collection with 6 features and 2 fields
+geometry type:  POLYGON
+dimension:      XY
+bbox:           xmin: -123.095 ymin: 49.23729 xmax: -123.0237 ymax: 49.28085
+epsg (SRID):    4326
+proj4string:    +proj=longlat +datum=WGS84 +no_defs
+                   category  zone_name                       geometry
+1          Light Industrial        I-2 POLYGON ((-123.0891 49.2759...
+2       Two-Family Dwelling       RT-2 POLYGON ((-123.0661 49.2546...
+3                Commercial        C-1 POLYGON ((-123.0238 49.2445...
+4 Comprehensive Development CD-1 (624) POLYGON ((-123.0237 49.2506...
+5 Comprehensive Development CD-1 (201) POLYGON ((-123.0338 49.2384...
+6                Commercial       C-2C POLYGON ((-123.0326 49.2375...
+```
+]
+
+---
+
+```r
+ggplot() + geom_sf(aes(fill=category), zoning)
+```
+
+&lt;img src="20_Spatial_join_files/figure-html/unnamed-chunk-4-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+### Lon lat
+
+You can convert a tibble with longitude and latitude into a sf object.
+
+.small[
+
+```r
+bca &lt;- read_rds("Data/bca_sm.rds") %&gt;% 
+  filter(juris_id==200) %&gt;% # city of Vancouver
+  sample_frac(0.01) %&gt;% # We use 1% random sample.
+  select(aa_id, roll_num, lon, lat)
+```
+]
+
+---
+
+.small[
+
+```r
+bca %&gt;% head()
+```
+
+```
+# A tibble: 6 x 4
+  aa_id roll_num         lon   lat
+  &lt;chr&gt; &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
+1 09    17793188350000 -123.  49.2
+2 09    29157615050028 -123.  49.3
+3 09    20577271680000 -123.  49.3
+4 09    26161599560033 -123.  49.3
+5 09    25792312470000 -123.  49.2
+6 09    23320718950465 -123.  49.2
+```
+]
+
+---
+
+You can use st_as_sf() to convert a tibble with lon and lat to a sf object.
+
+When you convert lon-lat data, use crs=4326 which uses lon and lat as x and y coordinates.
+
+
+```r
+bca_sf &lt;- bca %&gt;% st_as_sf(coords=c("lon", "lat"), crs=4326)
+```
+
+---
+
+.scroll-output[
+.small[
+
+```r
+bca_sf %&gt;% head()
+```
+
+```
+Simple feature collection with 6 features and 2 fields
+geometry type:  POINT
+dimension:      XY
+bbox:           xmin: -123.1254 ymin: 49.22374 xmax: -123.0238 ymax: 49.28542
+epsg (SRID):    4326
+proj4string:    +proj=longlat +datum=WGS84 +no_defs
+# A tibble: 6 x 3
+  aa_id roll_num                   geometry
+  &lt;chr&gt; &lt;chr&gt;                   &lt;POINT [°]&gt;
+1 09    17793188350000 (-123.1031 49.22405)
+2 09    29157615050028 (-123.1254 49.27395)
+3 09    20577271680000 (-123.0529 49.28542)
+4 09    26161599560033 (-123.1097 49.27883)
+5 09    25792312470000 (-123.0307 49.22374)
+6 09    23320718950465 (-123.0238 49.23264)
+```
+]]
+
+---
+
+.small[
+
+```r
+ggplot() + geom_sf(data=bca_sf)
+```
+
+&lt;img src="20_Spatial_join_files/figure-html/unnamed-chunk-9-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+### Spatial Join
+
+Suppose that you want to identify zoning code for each transaction in the city of Vancouver.
+
+You can spatial join the two sf objects: bca_sf and zoning
+
+---
+
+For spatial join (or any other geoprocessing) to work, the two sf objects must have the same CRS. 
+
+.small[
+
+```r
+st_crs(bca_sf)
+```
+
+```
+Coordinate Reference System:
+  EPSG: 4326 
+  proj4string: "+proj=longlat +datum=WGS84 +no_defs"
+```
+]
+
+.small[
+
+```r
+st_crs(zoning)
+```
+
+```
+Coordinate Reference System:
+  EPSG: 4326 
+  proj4string: "+proj=longlat +datum=WGS84 +no_defs"
+```
+]
+
+---
+
+Otherwise we would have to change the CRS of one sf to match that of the other sf, using st_transform() function.
+
+
+```r
+zoning &lt;- zoning %&gt;% st_transform(crs = st_crs(bca_sf) )
+```
+
+It is not necessary in this case, as the two already use the same CRS.
+
+---
+
+
+```r
+bca_z &lt;- bca_sf %&gt;% st_join( zoning )
+```
+
+st_join() keeps all rows in the first sf dataset, just like the left_join().
+
+---
+
+.small[
+
+```r
+bca_z
+```
+
+```
+Simple feature collection with 1962 features and 4 fields
+geometry type:  POINT
+dimension:      XY
+bbox:           xmin: -123.221 ymin: 49.20355 xmax: -123.0238 ymax: 49.29382
+epsg (SRID):    4326
+proj4string:    +proj=longlat +datum=WGS84 +no_defs
+# A tibble: 1,962 x 5
+     aa_id roll_num                    geometry category               zone_name
+     &lt;chr&gt; &lt;chr&gt;                    &lt;POINT [°]&gt; &lt;fct&gt;                  &lt;fct&gt;    
+   1 09    17793188350000  (-123.1031 49.22405) One-Family Dwelling    RS-1     
+   2 09    29157615050028  (-123.1254 49.27395) Comprehensive Develop~ CD-1 (18~
+   3 09    20577271680000  (-123.0529 49.28542) One-Family Dwelling    RS-1     
+   4 09    26161599560033  (-123.1097 49.27883) Comprehensive Develop~ CD-1 (41~
+   5 09    25792312470000  (-123.0307 49.22374) One-Family Dwelling    RS-1     
+   6 09    23320718950465  (-123.0238 49.23264) Commercial             C-2      
+   7 09    7654130500018   (-123.1376 49.26234) Multi-Family Dwelling  RM-3     
+   8 09    4730090940002   (-123.1526 49.24219) Comprehensive Develop~ CD-1 (22)
+   9 09    29126606020099  (-123.1242 49.27949) Comprehensive Develop~ DD       
+  10 09    1650020160000   (-123.2148 49.26541) One-Family Dwelling    RS-1     
+  11 09    12816148050000  (-123.1312 49.21503) One-Family Dwelling    RS-1     
+  12 09    25315825410014   (-123.0288 49.2098) Comprehensive Develop~ CD-1 (11~
+  13 09    26190596240068  (-123.0993 49.27819) Historical Area        HA-1A    
+  14 09    2634087970006   (-123.1531 49.27102) Multi-Family Dwelling  RM-4     
+  15 09    30614157940077  (-123.1221 49.27177) Comprehensive Develop~ CD-1 (29~
+  16 09    18839246020013  (-123.0665 49.20721) Comprehensive Develop~ CD-1 (26~
+  17 09    27120604970084  (-123.1253 49.28242) Comprehensive Develop~ CD-1 (22~
+  18 09    2683061710000   (-123.1709 49.26076) One-Family Dwelling    RS-5     
+  19 09    23725318950043  (-123.0258 49.23441) Comprehensive Develop~ CD-1 (31~
+  20 09    26138600540169  (-123.1176 49.28016) Comprehensive Develop~ DD       
+  21 09    30162604050247  (-123.1156 49.27583) Comprehensive Develop~ CD-1 (32~
+  22 09    18839246020002  (-123.0665 49.20721) Comprehensive Develop~ CD-1 (26~
+  23 09    28583110520032  (-123.1322 49.29235) Comprehensive Develop~ CD-1 (32~
+  24 09    29148606290084  (-123.1212 49.27698) Comprehensive Develop~ DD       
+  25 09    30157606020232  (-123.1186 49.27577) Historical Area        HA-3     
+  26 09    27615118580075  (-123.1348 49.27951) Multi-Family Dwelling  RM-5A    
+  27 09    4698067310000   (-123.1693 49.25395) One-Family Dwelling    RS-1     
+  28 09    19230726680001   (-123.0759 49.2425) Two-Family Dwelling    RT-2     
+  29 09    1674032500000   (-123.1925 49.26239) One-Family Dwelling    RS-1     
+  30 09    2638084480019   (-123.1564 49.26881) Multi-Family Dwelling  RM-4     
+  31 09    30159607880173  (-123.1182 49.27392) Comprehensive Develop~ CD-1 (32~
+  32 09    30612157030157  (-123.1195 49.27328) Comprehensive Develop~ CD-1 (32~
+  33 09    24279750660000  (-123.0498 49.23164) One-Family Dwelling    RS-1     
+  34 09    24254792840000  (-123.0621 49.22333) One-Family Dwelling    RS-1     
+  35 09    30159607880276  (-123.1178 49.27359) Comprehensive Develop~ CD-1 (32~
+  36 09    22706300610000  (-123.0306 49.24649) One-Family Dwelling    RS-1     
+  37 09    29148608930119   (-123.1231 49.2757) Comprehensive Develop~ DD       
+  38 09    8721130640000   (-123.1373 49.24504) One-Family Dwelling    RS-5     
+  39 09    28589119870054  (-123.1166 49.28816) Comprehensive Develop~ CD-1 (36~
+  40 09    14588265940002   (-123.058 49.28198) Multi-Family Dwelling  RM-3A    
+  41 09    13640170030130   (-123.1137 49.2673) Commercial             C-3A     
+  42 09    26600117080162  (-123.1268 49.28794) Comprehensive Develop~ CD-1 (34~
+  43 09    27603118420035  (-123.1271 49.28425) Multi-Family Dwelling  RM-5B    
+  44 09    2640040040010   (-123.1854 49.26834) Commercial             C-2      
+  45 09    2648097750025   (-123.1465 49.26488) Multi-Family Dwelling  RM-4     
+  46 09    2664087180086   (-123.1544 49.26171) Comprehensive Develop~ CD-1 (35~
+  47 09    24279799120000     (-123.05 49.2217) One-Family Dwelling    RS-1     
+  48 09    30617124080058    (-123.133 49.2753) Comprehensive Develop~ CD-1 (34~
+  49 09    2630077440006   (-123.1612 49.27241) Multi-Family Dwelling  RM-4     
+  50 09    25305810270028  (-123.0392 49.21985) Comprehensive Develop~ CD-1 (68)
+  51 09    27601109520011  (-123.1355 49.29245) Multi-Family Dwelling  RM-5B    
+  52 09    12125832240001  (-123.1418 49.20648) Multi-Family Dwelling  RM-4     
+  53 09    2640084090039   (-123.1553 49.26838) Commercial             C-2B     
+  54 09    5750054060023   (-123.1748 49.23444) Comprehensive Develop~ CD-1 (37~
+  55 09    4090710510048   (-123.1545 49.25108) Comprehensive Develop~ CD-1 (78)
+  56 09    10797148710000  (-123.1294 49.22313) One-Family Dwelling    RS-1     
+  57 09    29156602050076   (-123.1165 49.2788) Comprehensive Develop~ CD-1 (32~
+  58 09    27616119040050  (-123.1344 49.27782) Multi-Family Dwelling  RM-5A    
+  59 09    2686097590001    (-123.147 49.25929) Two-Family Dwelling    RT-8     
+  60 09    17190823260001  (-123.1017 49.21234) Two-Family Dwelling    RT-2     
+  61 09    26172595060079  (-123.1053 49.27943) Comprehensive Develop~ CD-1 (37~
+  62 09    29138614930215  (-123.1271 49.27435) Comprehensive Develop~ DD       
+  63 09    6035750230000   (-123.1901 49.23419) One-Family Dwelling    RS-5     
+  64 09    26589178080145  (-123.1037 49.28229) Historical Area        HA-2     
+  65 09    28589117530085  (-123.1224 49.28979) Comprehensive Develop~ CD-1 (36~
+  66 09    8730130230000    (-123.1382 49.2421) One-Family Dwelling    RS-5     
+  67 09    28583110840040    (-123.1316 49.292) Comprehensive Develop~ CD-1 (32~
+  68 09    7170684050207   (-123.1167 49.25702) Multi-Family Dwelling  RM-4     
+  69 09    15242696080041   (-123.0693 49.2508) Comprehensive Develop~ CD-1 (42~
+  70 09    2664087570009   (-123.1542 49.26223) Comprehensive Develop~ CD-1 (38~
+  71 09    29157604960083  (-123.1173 49.27625) Comprehensive Develop~ DD       
+  72 09    16729212570000  (-123.0868 49.24107) One-Family Dwelling    RS-1     
+  73 09    26597118380003  (-123.1239 49.28729) Comprehensive Develop~ DD       
+  74 09    23715304810000  (-123.0305 49.24054) One-Family Dwelling    RS-1     
+  75 09    30162604050103  (-123.1156 49.27583) Comprehensive Develop~ CD-1 (32~
+  76 09    14641265460000  (-123.0592 49.26472) Two-Family Dwelling    RT-5     
+  77 09    14259607130000   (-123.062 49.27276) Two-Family Dwelling    RT-5     
+  78 09    26579186420007   (-123.101 49.28379) Historical Area        HA-2     
+  79 09    7670130930016   (-123.1367 49.26101) Multi-Family Dwelling  RM-3     
+  80 09    13650184980009   (-123.1034 49.2627) Commercial             C-3A     
+  81 09    1646037080015   (-123.1872 49.26566) Multi-Family Dwelling  RM-4     
+  82 09    2640058320019   (-123.1732 49.26835) Multi-Family Dwelling  RM-4     
+  83 09    26592116040021  (-123.1267 49.28907) Comprehensive Develop~ DD       
+  84 09    23720312080109  (-123.0295 49.23574) Comprehensive Develop~ CD-1 (31~
+  85 09    30167604540169  (-123.1123 49.27406) Comprehensive Develop~ CD-1 (42~
+  86 09    9159743530016    (-123.124 49.23452) Comprehensive Develop~ CD-1 (43~
+  87 09    26597117050051  (-123.1251 49.28869) Comprehensive Develop~ DD       
+  88 09    14631253420000  (-123.0648 49.26838) Two-Family Dwelling    RT-5     
+  89 09    26120604040072  (-123.1245 49.28096) Comprehensive Develop~ CD-1 (32~
+  90 09    9714174180000   (-123.1116 49.24668) One-Family Dwelling    RS-1     
+  91 09    29148606030148   (-123.1208 49.2773) Comprehensive Develop~ DD       
+  92 09    12125827840069  (-123.1419 49.20875) Comprehensive Develop~ CD-1 (51~
+  93 09    15696203110000  (-123.0916 49.25309) One-Family Dwelling    RS-1     
+  94 09    13194598540000  (-123.0954 49.27699) Two-Family Dwelling    RT-3     
+  95 09    12835138520012  (-123.1359 49.20407) Multi-Family Dwelling  RM-3A    
+  96 09    29138606610131  (-123.1223 49.27757) Comprehensive Develop~ DD       
+  97 09    23720315930153  (-123.0275 49.23546) Comprehensive Develop~ CD-1 (31~
+  98 09    29138606040145  (-123.1211 49.27759) Comprehensive Develop~ DD       
+  99 09    18830276340091  (-123.0512 49.20706) Comprehensive Develop~ CD-1 (24~
+ 100 09    30617121030091  (-123.1339 49.27622) Comprehensive Develop~ DD       
+ 101 09    29156604670086  (-123.1189 49.27686) Comprehensive Develop~ DD       
+ 102 09    10765147420000   (-123.1305 49.2282) One-Family Dwelling    RS-1     
+ 103 09    29138604440089  (-123.1199 49.27836) Comprehensive Develop~ DD       
+ 104 09    30161606550183  (-123.1166 49.27363) Comprehensive Develop~ CD-1 (32~
+ 105 09    2670087990013   (-123.1536 49.26151) Comprehensive Develop~ CD-1 (35~
+ 106 09    14655230130002   (-123.0754 49.2615) Two-Family Dwelling    RT-5     
+ 107 09    2625095170002   (-123.1498 49.27634) Two-Family Dwelling    RT-9     
+ 108 09    29126612940022  (-123.1283 49.27676) Comprehensive Develop~ DD       
+ 109 09    27603119070027   (-123.1251 49.2837) Comprehensive Develop~ DD       
+ 110 09    7650149060012   (-123.1287 49.26313) Commercial             C-3A     
+ 111 09    29126612940077  (-123.1283 49.27676) Comprehensive Develop~ DD       
+ 112 09    19717225580000   (-123.079 49.24517) One-Family Dwelling    RS-1     
+ 113 09    7640146180004   (-123.1309 49.26573) Multi-Family Dwelling  FM-1     
+ 114 09    9150690980003    (-123.1268 49.2565) Multi-Family Dwelling  RM-3A    
+ 115 09    7690134590019   (-123.1351 49.25818) Multi-Family Dwelling  RM-3     
+ 116 09    11802161470000  (-123.1196 49.22204) One-Family Dwelling    RS-1     
+ 117 09    12144830060001  (-123.1343 49.20827) Multi-Family Dwelling  RM-3A    
+ 118 09    21280631050008  (-123.0445 49.26839) Commercial             C-2C1    
+ 119 09    10125790550000  (-123.1423 49.22529) One-Family Dwelling    RS-6     
+ 120 09    29124612720022  (-123.1289 49.27759) Comprehensive Develop~ DD       
+ 121 09    26600118510194  (-123.1242 49.28684) Comprehensive Develop~ CD-1 (44~
+ 122 09    4708062470000   (-123.1697 49.25035) One-Family Dwelling    RS-1     
+ 123 09    16211758600000  (-123.0889 49.22802) One-Family Dwelling    RS-1     
+ 124 09    17250799050000  (-123.0663 49.22165) Two-Family Dwelling    RT-2     
+ 125 09    28583110020149  (-123.1326 49.29236) Comprehensive Develop~ CD-1 (32~
+ 126 09    10125755240000   (-123.141 49.23187) One-Family Dwelling    RS-3     
+ 127 09    13184634950065  (-123.1053 49.27118) Comprehensive Develop~ CD-1 (45~
+ 128 09    7670120940016   (-123.1442 49.26057) Multi-Family Dwelling  RM-3     
+ 129 09    29157615050344  (-123.1261 49.27387) Comprehensive Develop~ CD-1 (18~
+ 130 09    2683067020000   (-123.1701 49.26024) One-Family Dwelling    RS-5     
+ 131 09    13687194940002  (-123.0968 49.25736) Multi-Family Dwelling  RM-4     
+ 132 09    15689203420001    (-123.091 49.2562) Commercial             C-2      
+ 133 09    29157604960091  (-123.1173 49.27625) Comprehensive Develop~ DD       
+ 134 09    30162604050518  (-123.1156 49.27531) Comprehensive Develop~ CD-1 (32~
+ 135 09    13646190910219  (-123.0996 49.26539) Light Industrial       IC-3     
+ 136 09    26590124460063  (-123.1156 49.28631) Comprehensive Develop~ CD-1 (44~
+ 137 09    26600116030149  (-123.1275 49.28899) Comprehensive Develop~ DD       
+ 138 09    2084646250000   (-123.1579 49.26542) Two-Family Dwelling    RT-8     
+ 139 09    16188716190000  (-123.1029 49.24572) One-Family Dwelling    RS-1     
+ 140 09    26592134050164  (-123.1136 49.28431) Comprehensive Develop~ DD       
+ 141 09    24810300330000  (-123.0404 49.22044) One-Family Dwelling    RS-1     
+ 142 09    19226750320000  (-123.0795 49.23187) One-Family Dwelling    RS-1     
+ 143 09    13640184930160  (-123.1029 49.26946) Comprehensive Develop~ CD-1 (50~
+ 144 09    27119603910002   (-123.127 49.28351) Multi-Family Dwelling  RM-5B    
+ 145 09    7683146970002   (-123.1297 49.25994) Multi-Family Dwelling  RM-3     
+ 146 09    8150697850002    (-123.1279 49.2531) Multi-Family Dwelling  RM-3A    
+ 147 09    30157614070108   (-123.1249 49.2736) Comprehensive Develop~ CD-1 (26~
+ 148 09    2654090720008   (-123.1514 49.26258) Commercial             C-7      
+ 149 09    26597117280090  (-123.1254 49.28822) Comprehensive Develop~ CD-1 (25~
+ 150 09    13640194940035  (-123.0972 49.26677) Light Industrial       IC-3     
+ 151 09    29120614040143   (-123.1313 49.2773) Comprehensive Develop~ DD       
+ 152 09    7643124870042   (-123.1396 49.26653) Commercial             C-3A     
+ 153 09    22280688130000  (-123.0448 49.25518) One-Family Dwelling    RS-1     
+ 154 09    27612110800016  (-123.1408 49.28622) Comprehensive Develop~ CD-1 (48~
+ 155 09    13645210050044  (-123.0883 49.26554) Multi-Family Dwelling  RM-4     
+ 156 09    7643130990143    (-123.138 49.26627) Commercial             C-3A     
+ 157 09    13638182500196  (-123.1055 49.27006) Comprehensive Develop~ CD-1 (46~
+ 158 09    6090810570000   (-123.1502 49.21818) One-Family Dwelling    RS-1     
+ 159 09    25305810280102  (-123.0368 49.22005) One-Family Dwelling    RS-1     
+ 160 09    12824124370000  (-123.1425 49.21252) One-Family Dwelling    RS-1     
+ 161 09    3714042870000    (-123.179 49.24829) One-Family Dwelling    RS-5     
+ 162 09    17250802770009  (-123.0663 49.22059) Commercial             C-2      
+ 163 09    1650024020032   (-123.2082 49.26548) Comprehensive Develop~ CD-1 (39~
+ 164 09    23706270430000   (-123.0552 49.2465) One-Family Dwelling    RS-1     
+ 165 09    26120604040282  (-123.1242 49.28196) Comprehensive Develop~ CD-1 (22~
+ 166 09    15693185840000  (-123.1033 49.25437) One-Family Dwelling    RS-7     
+ 167 09    20282600600000   (-123.041 49.27575) One-Family Dwelling    RS-1     
+ 168 09    10141755750000   (-123.137 49.23104) One-Family Dwelling    RS-1     
+ 169 09    7643120040199    (-123.145 49.26585) Commercial             C-3A     
+ 170 09    1674022070000     (-123.212 49.2632) One-Family Dwelling    RS-1     
+ 171 09    9690153960026   (-123.1227 49.25679) Multi-Family Dwelling  RM-4     
+ 172 09    11170758050051  (-123.1177 49.22977) Comprehensive Develop~ CD-1 (38~
+ 173 09    7636124330110   (-123.1398 49.27023) Comprehensive Develop~ FCCDD    
+ 174 09    13670191080001  (-123.1003 49.25994) Multi-Family Dwelling  RM-4N    
+ 175 09    26592172510045  (-123.1063 49.28112) Comprehensive Develop~ CD-1 (42~
+ 176 09    9702163940000   (-123.1185 49.25218) One-Family Dwelling    RS-5     
+ 177 09    30124616060033  (-123.1313 49.27609) Comprehensive Develop~ CD-1 (27~
+ 178 09    2643078290002   (-123.1593 49.26675) Two-Family Dwelling    RT-8     
+ 179 09    30159607880172  (-123.1182 49.27392) Comprehensive Develop~ CD-1 (32~
+ 180 09    13665222490001  (-123.0796 49.26079) Two-Family Dwelling    RT-5     
+ 181 09    26580172600005  (-123.1052 49.28337) Historical Area        HA-2     
+ 182 09    13655214430000  (-123.0842 49.26174) Two-Family Dwelling    RT-5     
+ 183 09    13650217040019  (-123.0817 49.26234) Multi-Family Dwelling  RM-4N    
+ 184 09    19221742620000  (-123.0821 49.23504) One-Family Dwelling    RS-1     
+ 185 09    29138612930028  (-123.1256 49.27531) Comprehensive Develop~ DD       
+ 186 09    28589117090108   (-123.1232 49.2901) Comprehensive Develop~ CD-1 (36~
+ 187 09    3726030670000   (-123.1946 49.24362) One-Family Dwelling    RS-5     
+ 188 09    30161612980105  (-123.1204 49.27208) Comprehensive Develop~ CD-1 (29~
+ 189 09    11153795340000  (-123.1248 49.22306) One-Family Dwelling    RS-1     
+ 190 09    6034830950000   (-123.1911 49.23204) One-Family Dwelling    RS-5     
+ 191 09    13640184930031  (-123.1029 49.26946) Comprehensive Develop~ CD-1 (50~
+ 192 09    14607252050010  (-123.0675 49.27321) Two-Family Dwelling    RT-5     
+ 193 09    27600110940147  (-123.1331 49.29171) Multi-Family Dwelling  RM-6     
+ 194 09    21631277520000  (-123.0456 49.26823) One-Family Dwelling    RS-1     
+ 195 09    20570274430000  (-123.0507 49.28898) One-Family Dwelling    RS-1     
+ 196 09    14253665040018  (-123.0657 49.26011) Multi-Family Dwelling  RM-4     
+ 197 09    16192722610000  (-123.1004 49.24373) One-Family Dwelling    RS-1     
+ 198 09    23275722550000  (-123.0514 49.24313) Multi-Family Dwelling  RM-7     
+ 199 09    30614157050040  (-123.1224 49.27277) Comprehensive Develop~ CD-1 (29~
+ 200 09    14638234070016  (-123.0732 49.26626) Multi-Family Dwelling  RM-4     
+ 201 09    23304715340013  (-123.0318 49.24006) Comprehensive Develop~ CD-1 (22~
+ 202 09    23718303760007  (-123.0324 49.23839) Commercial             C-2C     
+ 203 09    29148606290110  (-123.1212 49.27698) Comprehensive Develop~ DD       
+ 204 09    30157608950155  (-123.1217 49.27436) Comprehensive Develop~ CD-1 (26~
+ 205 09    10769144260000  (-123.1343 49.22742) One-Family Dwelling    RS-1     
+ 206 09    7690153690020   (-123.1229 49.25729) Multi-Family Dwelling  RM-4     
+ 207 09    7688138970175   (-123.1324 49.25814) Multi-Family Dwelling  RM-3     
+ 208 09    10133755340000  (-123.1376 49.23172) One-Family Dwelling    RS-1     
+ 209 09    29138612930111  (-123.1256 49.27531) Comprehensive Develop~ DD       
+ 210 09    3739042220000   (-123.1813 49.23831) One-Family Dwelling    RS-5     
+ 211 09    13640179170011   (-123.1085 49.2696) Comprehensive Develop~ CD-1 (53~
+ 212 09    2654087430038   (-123.1541 49.26315) Commercial             C-7      
+ 213 09    13638186080160  (-123.1023 49.27003) Comprehensive Develop~ CD-1 (52~
+ 214 09    7654165040016    (-123.117 49.26175) Comprehensive Develop~ CD-1 (18~
+ 215 09    27616119960013  (-123.1338 49.27737) Multi-Family Dwelling  RM-5A    
+ 216 09    11755170440000  (-123.1146 49.23131) One-Family Dwelling    RS-1     
+ 217 09    12825153140000  (-123.1256 49.21115) One-Family Dwelling    RS-1     
+ 218 09    13638179040085  (-123.1093 49.27007) Comprehensive Develop~ CD-1 (46~
+ 219 09    26592134050132  (-123.1136 49.28431) Comprehensive Develop~ DD       
+ 220 09    4694067220000   (-123.1695 49.25525) One-Family Dwelling    RS-1     
+ 221 09    27613119960029  (-123.1309 49.27842) Comprehensive Develop~ CD-1 (23~
+ 222 09    5078758610000   (-123.1619 49.22987) One-Family Dwelling    RS-5     
+ 223 09    13684170540001   (-123.114 49.25844) Two-Family Dwelling    RT-6     
+ 224 09    15236694140000  (-123.0712 49.25337) Two-Family Dwelling    RT-10    
+ 225 09    4694075060000   (-123.1629 49.25519) One-Family Dwelling    RS-1     
+ 226 09    13648170960066  (-123.1134 49.26367) Commercial             C-3A     
+ 227 09    2670087640024   (-123.1538 49.26073) Commercial             C-7      
+ 228 09    1674032060000    (-123.1937 49.2624) One-Family Dwelling    RS-1     
+ 229 09    2686090770002   (-123.1516 49.25922) Two-Family Dwelling    RT-8     
+ 230 09    14655267290000  (-123.0578 49.26145) One-Family Dwelling    RS-1     
+ 231 09    30161606550334  (-123.1172 49.27348) Comprehensive Develop~ CD-1 (32~
+ 232 09    24796300880000  (-123.0393 49.22267) One-Family Dwelling    RS-1     
+ 233 09    14250634030009  (-123.0697 49.26678) Commercial             C-2C1    
+ 234 09    2643040260000    (-123.185 49.26664) Two-Family Dwelling    RT-7     
+ 235 09    17190801270002  (-123.1022 49.22172) Two-Family Dwelling    RT-2     
+ 236 09    8718135640000   (-123.1355 49.24577) One-Family Dwelling    RS-5     
+ 237 09    2664084530155   (-123.1575 49.26265) Comprehensive Develop~ CD-1 (34~
+ 238 09    29156604070587  (-123.1185 49.27785) Comprehensive Develop~ DD       
+ 239 09    2670084080022   (-123.1573 49.26078) Commercial             C-7      
+ 240 09    28115573060049  (-123.1281 49.29054) Comprehensive Develop~ CD-1 (31~
+ 241 09    26579178530021   (-123.103 49.28379) Historical Area        HA-2     
+ 242 09    7648149590023   (-123.1279 49.26457) Multi-Family Dwelling  FM-1     
+ 243 09    17230799150000  (-123.0779 49.22157) One-Family Dwelling    RS-1     
+ 244 09    26592134050218  (-123.1136 49.28431) Comprehensive Develop~ DD       
+ 245 09    26602156080122   (-123.115 49.27874) Comprehensive Develop~ DD       
+ 246 09    3731042650000     (-123.18 49.24167) One-Family Dwelling    RS-5     
+ 247 09    2664084760071   (-123.1566 49.26168) Comprehensive Develop~ CD-1 (34~
+ 248 09    13186633520107   (-123.102 49.27126) Comprehensive Develop~ CD-1 (50~
+ 249 09    23312725810000   (-123.031 49.23257) One-Family Dwelling    RS-1     
+ 250 09    27600109480037  (-123.1347 49.29277) Multi-Family Dwelling  RM-6     
+ 251 09    26172595060357  (-123.1075 49.27882) Comprehensive Develop~ CD-1 (26~
+ 252 09    25825258690000  (-123.0579 49.21115) One-Family Dwelling    RS-1     
+ 253 09    30159607880186  (-123.1182 49.27392) Comprehensive Develop~ CD-1 (32~
+ 254 09    23720312080115  (-123.0295 49.23574) Comprehensive Develop~ CD-1 (31~
+ 255 09    26600117080171  (-123.1268 49.28794) Comprehensive Develop~ CD-1 (34~
+ 256 09    3040747370030   (-123.1857 49.23536) Commercial             C-2      
+ 257 09    4093722970033    (-123.151 49.24268) Comprehensive Develop~ CD-1 (22)
+ 258 09    28583110050024  (-123.1311 49.29206) Comprehensive Develop~ CD-1 (32~
+ 259 09    29126608920153  (-123.1269 49.27785) Comprehensive Develop~ DD       
+ 260 09    19223719690000  (-123.0817 49.24306) One-Family Dwelling    RS-1     
+ 261 09    29152606880054  (-123.1199 49.27662) Historical Area        HA-3     
+ 262 09    27601117960100  (-123.1274 49.28754) Comprehensive Develop~ CD-1 (31~
+ 263 09    29157604960092  (-123.1173 49.27625) Comprehensive Develop~ DD       
+ 264 09    30157606020372  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+ 265 09    20585300420000   (-123.0298 49.2845) One-Family Dwelling    RS-1     
+ 266 09    26598190450052   (-123.0986 49.2779) Historical Area        HA-1A    
+ 267 09    21646282290000   (-123.0408 49.2641) One-Family Dwelling    RS-1     
+ 268 09    29156604670034  (-123.1189 49.27686) Comprehensive Develop~ DD       
+ 269 09    17821212390000    (-123.087 49.2132) One-Family Dwelling    RS-1     
+ 270 09    7690153070017    (-123.124 49.25731) Multi-Family Dwelling  RM-4     
+ 271 09    23770266390062  (-123.0598 49.24302) Commercial             C-2      
+ 272 09    29138608040072  (-123.1227 49.27653) Comprehensive Develop~ DD       
+ 273 09    29138614930072  (-123.1271 49.27435) Comprehensive Develop~ DD       
+ 274 09    7686153620019   (-123.1229 49.25838) Multi-Family Dwelling  RM-4     
+ 275 09    24768254720000  (-123.0603 49.22597) One-Family Dwelling    RS-1     
+ 276 09    27603109740059  (-123.1374 49.29099) Multi-Family Dwelling  RM-5B    
+ 277 09    29138606040037  (-123.1211 49.27759) Comprehensive Develop~ DD       
+ 278 09    30162604050406  (-123.1156 49.27531) Comprehensive Develop~ CD-1 (32~
+ 279 09    7638163300012    (-123.119 49.26668) Comprehensive Develop~ FCCDD    
+ 280 09    19750236010000  (-123.0728 49.23266) Comprehensive Develop~ CD-1 (26~
+ 281 09    23319725120043  (-123.0246 49.23348) Comprehensive Develop~ CD-1 (54~
+ 282 09    26600117530187  (-123.1256 49.28773) Comprehensive Develop~ CD-1 (26~
+ 283 09    14577267040002  (-123.0575 49.28544) Multi-Family Dwelling  RM-3A    
+ 284 09    28583110520001  (-123.1322 49.29235) Comprehensive Develop~ CD-1 (32~
+ 285 09    30124616060087  (-123.1313 49.27609) Comprehensive Develop~ CD-1 (27~
+ 286 09    29156602050083   (-123.1165 49.2788) Comprehensive Develop~ CD-1 (32~
+ 287 09    7636124850042   (-123.1386 49.26981) Comprehensive Develop~ FCCDD    
+ 288 09    17821203200000   (-123.093 49.21286) One-Family Dwelling    RS-1     
+ 289 09    23316718080047  (-123.0262 49.23514) Comprehensive Develop~ CD-1 (31~
+ 290 09    2654090950058   (-123.1515 49.26312) Comprehensive Develop~ CD-1 (55~
+ 291 09    8703148780007    (-123.128 49.25151) Commercial             C-2      
+ 292 09    30605186080020  (-123.1011 49.27465) Comprehensive Develop~ CD-1 (26~
+ 293 09    25814300040042  (-123.0401 49.21649) Comprehensive Develop~ CD-1 (68)
+ 294 09    3040706680000   (-123.1848 49.25136) One-Family Dwelling    RS-5     
+ 295 09    14593267150000  (-123.0575 49.27981) Two-Family Dwelling    RT-5     
+ 296 09    29138602080066  (-123.1179 49.27974) Comprehensive Develop~ CD-1 (41~
+ 297 09    11156796550000  (-123.1242 49.22242) One-Family Dwelling    RS-1     
+ 298 09    12814156880000  (-123.1205 49.21575) One-Family Dwelling    RS-1     
+ 299 09    7640153060029   (-123.1239 49.26562) Multi-Family Dwelling  FM-1     
+ 300 09    26579178530019   (-123.103 49.28379) Historical Area        HA-2     
+ 301 09    2045642460000   (-123.1794 49.26732) Two-Family Dwelling    RT-7     
+ 302 09    14600253930000  (-123.0639 49.27678) Two-Family Dwelling    RT-5     
+ 303 09    3042726300000   (-123.1816 49.24298) One-Family Dwelling    RS-5     
+ 304 09    5090742070012   (-123.1559 49.23705) Commercial             C-2      
+ 305 09    24320770870000   (-123.024 49.23079) One-Family Dwelling    RS-1     
+ 306 09    16212758690000  (-123.0884 49.22783) One-Family Dwelling    RS-1     
+ 307 09    26580178240014    (-123.1035 49.283) Historical Area        HA-2     
+ 308 09    13644190320018  (-123.0999 49.26617) Light Industrial       IC-3     
+ 309 09    5747079160053   (-123.1603 49.23544) Multi-Family Dwelling  RM-3     
+ 310 09    26597118030231   (-123.1239 49.2878) Comprehensive Develop~ DD       
+ 311 09    19750224700000  (-123.0805 49.23248) One-Family Dwelling    RS-1     
+ 312 09    1640035070051   (-123.1899 49.26895) Multi-Family Dwelling  RM-3A    
+ 313 09    19246755480000   (-123.0666 49.2291) One-Family Dwelling    RS-1     
+ 314 09    3692030910000   (-123.1938 49.25678) One-Family Dwelling    RS-5     
+ 315 09    26116573940371   (-123.1253 49.2893) Comprehensive Develop~ CD-1 (25~
+ 316 09    29160604910092   (-123.117 49.27595) Comprehensive Develop~ DD       
+ 317 09    28589118590005  (-123.1197 49.28869) Comprehensive Develop~ CD-1 (36~
+ 318 09    12170816160000  (-123.1164 49.21487) Two-Family Dwelling    RT-1     
+ 319 09    8135730060057   (-123.1368 49.24155) One-Family Dwelling    RS-5     
+ 320 09    2670090650045   (-123.1516 49.26128) Commercial             C-7      
+ 321 09    13643206040027  (-123.0906 49.26588) Multi-Family Dwelling  RM-4     
+ 322 09    26608120970208  (-123.1266 49.28065) Comprehensive Develop~ CD-1 (38~
+ 323 09    16711187820000  (-123.1019 49.24775) One-Family Dwelling    RS-7     
+ 324 09    13186633520129   (-123.102 49.27126) Comprehensive Develop~ CD-1 (50~
+ 325 09    18837270110001  (-123.0564 49.20616) One-Family Dwelling    RS-1B    
+ 326 09    26120606020006  (-123.1253 49.28059) Comprehensive Develop~ CD-1 (38~
+ 327 09    27612114090032  (-123.1382 49.28521) Multi-Family Dwelling  RM-5D    
+ 328 09    26600116040347  (-123.1282 49.28833) Comprehensive Develop~ CD-1 (31~
+ 329 09    25790314080101  (-123.0267 49.22365) Comprehensive Develop~ CD-1 (64)
+ 330 09    26161599940401   (-123.1108 49.2784) Comprehensive Develop~ CD-1 (41~
+ 331 09    13190687070082  (-123.1015 49.25666) Commercial             C-2C     
+ 332 09    13689197070001  (-123.0961 49.25679) Multi-Family Dwelling  RM-4N    
+ 333 09    21280612250000  (-123.0447 49.27111) One-Family Dwelling    RS-1     
+ 334 09    3050731310000   (-123.1791 49.24101) One-Family Dwelling    RS-5     
+ 335 09    10133755440000  (-123.1376 49.23155) One-Family Dwelling    RS-1     
+ 336 09    13645201940015  (-123.0918 49.26499) Multi-Family Dwelling  RM-4     
+ 337 09    8717125070000    (-123.1413 49.2477) One-Family Dwelling    RS-5     
+ 338 09    29152606880054  (-123.1199 49.27662) Historical Area        HA-3     
+ 339 09    29138608980166  (-123.1235 49.27599) Comprehensive Develop~ DD       
+ 340 09    27609114020032  (-123.1373 49.28532) Multi-Family Dwelling  RM-5A    
+ 341 09    4090722020011   (-123.1517 49.24445) One-Family Dwelling    RS-1     
+ 342 09    30618138350149  (-123.1278 49.27266) Comprehensive Develop~ CD-1 (36~
+ 343 09    22692297050000  (-123.0363 49.25421) One-Family Dwelling    RS-1     
+ 344 09    12144826380001     (-123.1339 49.21) Two-Family Dwelling    RT-2     
+ 345 09    5744078520032   (-123.1603 49.23609) Multi-Family Dwelling  RM-3     
+ 346 09    14586255050031   (-123.063 49.28416) Multi-Family Dwelling  RM-3A    
+ 347 09    14607267960000  (-123.0569 49.27267) Commercial             C-1      
+ 348 09    23308718950089  (-123.0304 49.23705) Comprehensive Develop~ CD-1 (31~
+ 349 09    2670040390000   (-123.1848 49.26372) One-Family Dwelling    RS-5     
+ 350 09    14253665040017  (-123.0657 49.26011) Multi-Family Dwelling  RM-4     
+ 351 09    7648149930005   (-123.1267 49.26438) Multi-Family Dwelling  FM-1     
+ 352 09    7688130950016   (-123.1371 49.25821) Multi-Family Dwelling  RM-3     
+ 353 09    2683097270001   (-123.1476 49.26005) Two-Family Dwelling    RT-8     
+ 354 09    29138614930030  (-123.1271 49.27435) Comprehensive Develop~ DD       
+ 355 09    5081742190004    (-123.159 49.23718) Multi-Family Dwelling  RM-3     
+ 356 09    5090742070028   (-123.1559 49.23705) Commercial             C-2      
+ 357 09    28115573060197  (-123.1272 49.29059) Comprehensive Develop~ CD-1 (31~
+ 358 09    7686146090002   (-123.1308 49.25903) Multi-Family Dwelling  RM-3     
+ 359 09    8721125470000   (-123.1407 49.24575) One-Family Dwelling    RS-5     
+ 360 09    23720315930194  (-123.0275 49.23546) Comprehensive Develop~ CD-1 (31~
+ 361 09    5077739980026   (-123.1625 49.23741) Comprehensive Develop~ CD-1 (37~
+ 362 09    27603117940063  (-123.1288 49.28536) Multi-Family Dwelling  RM-5B    
+ 363 09    4093722350069   (-123.1517 49.24356) Comprehensive Develop~ CD-1 (22)
+ 364 09    20300577520000   (-123.0306 49.2851) One-Family Dwelling    RS-1     
+ 365 09    15694190990000  (-123.0987 49.25408) One-Family Dwelling    RS-7     
+ 366 09    2045688440000   (-123.1796 49.25851) One-Family Dwelling    RS-5     
+ 367 09    1670032220000     (-123.193 49.2633) One-Family Dwelling    RS-1     
+ 368 09    23719303050014  (-123.0343 49.23917) Comprehensive Develop~ CD-1 (21~
+ 369 09    29120614040071   (-123.1313 49.2773) Comprehensive Develop~ DD       
+ 370 09    13640210080126  (-123.0882 49.26609) Multi-Family Dwelling  RM-4N    
+ 371 09    11790153040000  (-123.1249 49.22614) One-Family Dwelling    RS-1     
+ 372 09    25300817160000   (-123.0411 49.2151) One-Family Dwelling    RS-1     
+ 373 09    14607234020007   (-123.0731 49.2728) Multi-Family Dwelling  RM-4     
+ 374 09    27604119540021  (-123.1256 49.28321) Comprehensive Develop~ DD       
+ 375 09    29134604770016  (-123.1216 49.27925) Comprehensive Develop~ CD-1 (36~
+ 376 09    1640026140003   (-123.2039 49.26803) Comprehensive Develop~ CD-1 (17~
+ 377 09    2643062140000   (-123.1697 49.26641) Two-Family Dwelling    RT-7     
+ 378 09    22691308700000  (-123.0277 49.25262) One-Family Dwelling    RS-1     
+ 379 09    29134608970132   (-123.125 49.27705) Comprehensive Develop~ DD       
+ 380 09    29138604440200  (-123.1199 49.27836) Comprehensive Develop~ DD       
+ 381 09    23308718950220  (-123.0311 49.23723) Comprehensive Develop~ CD-1 (31~
+ 382 09    29126608920063  (-123.1269 49.27785) Comprehensive Develop~ DD       
+ 383 09    5074755520000   (-123.1639 49.23198) One-Family Dwelling    RS-5     
+ 384 09    17791195800000  (-123.0981 49.22437) One-Family Dwelling    RS-1     
+ 385 09    20606298010000  (-123.0334 49.27436) One-Family Dwelling    RS-1     
+ 386 09    17210807050016  (-123.0913 49.21881) Commercial             C-1      
+ 387 09    7646153950007   (-123.1222 49.26532) Multi-Family Dwelling  FM-1     
+ 388 09    30159607880129  (-123.1182 49.27392) Comprehensive Develop~ CD-1 (32~
+ 389 09    4696067460000    (-123.169 49.25434) One-Family Dwelling    RS-1     
+ 390 09    30614161040051  (-123.1214 49.27142) Comprehensive Develop~ CD-1 (29~
+ 391 09    13598196600002  (-123.0927 49.27745) Two-Family Dwelling    RT-3     
+ 392 09    23718306040063   (-123.0318 49.2378) Comprehensive Develop~ CD-1 (35~
+ 393 09    20607298350000  (-123.0326 49.27353) One-Family Dwelling    RS-1     
+ 394 09    30614157550020   (-123.1218 49.2726) Comprehensive Develop~ CD-1 (29~
+ 395 09    2640073090028    (-123.1637 49.2684) Multi-Family Dwelling  RM-4     
+ 396 09    22706275610000  (-123.0477 49.24649) One-Family Dwelling    RS-1     
+ 397 09    23720312080173  (-123.0295 49.23574) Comprehensive Develop~ CD-1 (31~
+ 398 09    20596271110000   (-123.0542 49.2785) One-Family Dwelling    RS-1     
+ 399 09    30157606020513  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+ 400 09    29148604510309  (-123.1195 49.27811) Comprehensive Develop~ DD       
+ 401 09    26600117530195  (-123.1256 49.28773) Comprehensive Develop~ CD-1 (26~
+ 402 09    13664171820004  (-123.1115 49.26118) Two-Family Dwelling    RT-6     
+ 403 09    13186654020006  (-123.1029 49.26154) Multi-Family Dwelling  RM-4     
+ 404 09    29134608970198   (-123.125 49.27705) Comprehensive Develop~ DD       
+ 405 09    11790179610000  (-123.1095 49.22614) One-Family Dwelling    RS-1     
+ 406 09    14633232060002  (-123.0749 49.26759) Multi-Family Dwelling  RM-4     
+ 407 09    30167604920056  (-123.1141 49.27354) Comprehensive Develop~ CD-1 (42~
+ 408 09    14604267050000    (-123.0577 49.275) Two-Family Dwelling    RT-5     
+ 409 09    26589178080106  (-123.1037 49.28229) Historical Area        HA-2     
+ 410 09    22701274400000   (-123.051 49.24947) One-Family Dwelling    RS-1     
+ 411 09    11797161230000  (-123.1226 49.22263) One-Family Dwelling    RS-1     
+ 412 09    13638194900041   (-123.0955 49.2675) Light Industrial       IC-3     
+ 413 09    26579178530003   (-123.103 49.28379) Historical Area        HA-2     
+ 414 09    2640072920022   (-123.1648 49.26804) Commercial             C-2      
+ 415 09    13683182440002   (-123.106 49.25928) Two-Family Dwelling    RT-6     
+ 416 09    30618138720059  (-123.1283 49.27242) Comprehensive Develop~ CD-1 (36~
+ 417 09    29138606040171  (-123.1211 49.27759) Comprehensive Develop~ DD       
+ 418 09    11790179730000  (-123.1092 49.22613) One-Family Dwelling    RS-1     
+ 419 09    21630280840000  (-123.0419 49.26915) One-Family Dwelling    RS-1     
+ 420 09    11170758960007  (-123.1161 49.22961) Comprehensive Develop~ CD-1 (38~
+ 421 09    27115613560013   (-123.139 49.28308) Multi-Family Dwelling  RM-5A    
+ 422 09    30157614070066  (-123.1249 49.27401) Comprehensive Develop~ CD-1 (26~
+ 423 09    13201665480000  (-123.0928 49.25999) Two-Family Dwelling    RT-5     
+ 424 09    10145750940000   (-123.133 49.23242) One-Family Dwelling    RS-1     
+ 425 09    14255566060017  (-123.0572 49.29016) Multi-Family Dwelling  RM-3A    
+ 426 09    14655230180000  (-123.0768 49.26122) Two-Family Dwelling    RT-5     
+ 427 09    6830083370000   (-123.1562 49.21753) One-Family Dwelling    RS-1     
+ 428 09    7684165070010   (-123.1174 49.25913) Multi-Family Dwelling  RM-3     
+ 429 09    20601298110000  (-123.0332 49.27602) One-Family Dwelling    RS-1     
+ 430 09    6842087290048   (-123.1524 49.21008) Comprehensive Develop~ CD-1 (18~
+ 431 09    27617119630025  (-123.1341 49.27691) Comprehensive Develop~ CD-1 (39~
+ 432 09    30157606020308  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+ 433 09    23304716540014   (-123.032 49.23949) Comprehensive Develop~ CD-1 (22~
+ 434 09    29148604510044  (-123.1195 49.27811) Comprehensive Develop~ DD       
+ 435 09    13184634950072  (-123.1053 49.27118) Comprehensive Develop~ CD-1 (45~
+ 436 09    24306770220012  (-123.0362 49.23348) Commercial             C-2      
+ 437 09    26592134050323  (-123.1136 49.28431) Comprehensive Develop~ DD       
+ 438 09    2067650840000   (-123.1698 49.26345) One-Family Dwelling    RS-5     
+ 439 09    30126617060160   (-123.132 49.27417) Comprehensive Develop~ BCPED    
+ 440 09    5739050730000    (-123.1767 49.2388) One-Family Dwelling    RS-5     
+ 441 09    24270790060005  (-123.0541 49.22431) Comprehensive Develop~ CD-1 (7B)
+ 442 09    2630087980002   (-123.1531 49.27227) Multi-Family Dwelling  RM-4     
+ 443 09    21607282300000  (-123.0407 49.27294) One-Family Dwelling    RS-1     
+ 444 09    30161612030125  (-123.1211 49.27274) Comprehensive Develop~ CD-1 (29~
+ 445 09    24300796430000  (-123.0416 49.22266) One-Family Dwelling    RS-1     
+ 446 09    23724306150000  (-123.0333 49.23568) One-Family Dwelling    RS-1     
+ 447 09    20282600200000    (-123.041 49.2761) One-Family Dwelling    RS-1     
+ 448 09    2646084260005   (-123.1572 49.26539) Multi-Family Dwelling  RM-4     
+ 449 09    1655026120000    (-123.2057 49.2644) One-Family Dwelling    RS-1     
+ 450 09    24753254120000  (-123.0617 49.23093) One-Family Dwelling    RS-1     
+ 451 09    7640134950044   (-123.1351 49.26685) Comprehensive Develop~ FCCDD    
+ 452 09    14265586060000  (-123.0595 49.28373) Multi-Family Dwelling  RM-3A    
+ 453 09    1686026120000   (-123.2059 49.25987) One-Family Dwelling    RS-1     
+ 454 09    4721056860000   (-123.1706 49.24583) One-Family Dwelling    RS-5     
+ 455 09    27115613560008   (-123.139 49.28308) Multi-Family Dwelling  RM-5A    
+ 456 09    30618138720047  (-123.1271 49.27159) Comprehensive Develop~ CD-1 (36~
+ 457 09    29138604920038    (-123.1205 49.278) Comprehensive Develop~ DD       
+ 458 09    2643078370000   (-123.1591 49.26676) Two-Family Dwelling    RT-8     
+ 459 09    30618129450118  (-123.1292 49.27358) Comprehensive Develop~ CD-1 (36~
+ 460 09    13645195940012  (-123.0961 49.26517) Multi-Family Dwelling  RM-4     
+ 461 09    2070643300001   (-123.1682 49.26626) Two-Family Dwelling    RT-8     
+ 462 09    9150697920007   (-123.1271 49.25278) Multi-Family Dwelling  RM-3A    
+ 463 09    27600110940139  (-123.1331 49.29171) Multi-Family Dwelling  RM-6     
+ 464 09    15190691070070  (-123.1018 49.25513) Comprehensive Develop~ CD-1 (49~
+ 465 09    27612113020024  (-123.1402 49.28584) Commercial             C-5A     
+ 466 09    25305810280077   (-123.0378 49.2198) Comprehensive Develop~ CD-1 (68)
+ 467 09    17810236290000  (-123.0734 49.21837) One-Family Dwelling    RS-1     
+ 468 09    10810135200000    (-123.1369 49.219) One-Family Dwelling    RS-1     
+ 469 09    29126612050081  (-123.1278 49.27776) Comprehensive Develop~ DD       
+ 470 09    7664134940012   (-123.1343 49.26137) Comprehensive Develop~ CD-1 (39~
+ 471 09    28115573060004  (-123.1281 49.29058) Comprehensive Develop~ CD-1 (31~
+ 472 09    26116573940031   (-123.1263 49.2895) Comprehensive Develop~ CD-1 (25~
+ 473 09    14648234980010  (-123.0704 49.26297) Commercial             C-3A     
+ 474 09    7654134650009   (-123.1348 49.26283) Multi-Family Dwelling  RM-3     
+ 475 09    2638084190001   (-123.1571 49.26933) Multi-Family Dwelling  RM-4     
+ 476 09    20592305050000  (-123.0281 49.28049) One-Family Dwelling    RS-1     
+ 477 09    13655212320002  (-123.0865 49.26138) Two-Family Dwelling    RT-5     
+ 478 09    28589118590067    (-123.12 49.28901) Comprehensive Develop~ CD-1 (36~
+ 479 09    13655201620000  (-123.0916 49.26128) Two-Family Dwelling    RT-5     
+ 480 09    1670026250009   (-123.2052 49.26402) Commercial             C-2      
+ 481 09    2636045090001   (-123.1794 49.27057) Two-Family Dwelling    RT-8     
+ 482 09    29138612050131  (-123.1249 49.27579) Comprehensive Develop~ DD       
+ 483 09    27600109480006  (-123.1347 49.29277) Multi-Family Dwelling  RM-6     
+ 484 09    9691170760000   (-123.1131 49.25552) One-Family Dwelling    RS-7     
+ 485 09    13640210080025  (-123.0882 49.26609) Multi-Family Dwelling  RM-4N    
+ 486 09    12153823550000  (-123.1265 49.21191) One-Family Dwelling    RS-1     
+ 487 09    27616119960001  (-123.1338 49.27737) Multi-Family Dwelling  RM-5A    
+ 488 09    13184634950125  (-123.1053 49.27118) Comprehensive Develop~ CD-1 (45~
+ 489 09    29152608520025  (-123.1217 49.27518) Historical Area        HA-3     
+ 490 09    13646194040037  (-123.0983 49.26429) Multi-Family Dwelling  RM-4     
+ 491 09    13634186500078   (-123.102 49.27101) Comprehensive Develop~ CD-1 (51~
+ 492 09    23718303760040  (-123.0324 49.23836) Commercial             C-2C     
+ 493 09    13190650960018  (-123.1006 49.26228) Commercial             C-3A     
+ 494 09    7654150150004    (-123.1262 49.2627) Comprehensive Develop~ CD-1 (13~
+ 495 09    7640146360003   (-123.1306 49.26579) Multi-Family Dwelling  FM-1     
+ 496 09    21650270980146   (-123.055 49.26193) Comprehensive Develop~ CD-1 (16~
+ 497 09    29138604440155  (-123.1199 49.27836) Comprehensive Develop~ DD       
+ 498 09    7646153800001     (-123.1228 49.265) Multi-Family Dwelling  FM-1     
+ 499 09    7643130080086   (-123.1382 49.26543) Commercial             C-3A     
+ 500 09    2686090040014   (-123.1529 49.25884) Commercial             C-2      
+ 501 09    9714163050006   (-123.1198 49.24793) Two-Family Dwelling    RT-2     
+ 502 09    14575265540019  (-123.0585 49.28725) Multi-Family Dwelling  RM-3A    
+ 503 09    2643095060009   (-123.1499 49.26612) Multi-Family Dwelling  RM-4     
+ 504 09    12813176940070  (-123.1125 49.21526) Comprehensive Develop~ CD-1 (17~
+ 505 09    29138612050095  (-123.1249 49.27579) Comprehensive Develop~ DD       
+ 506 09    12144826720001  (-123.1342 49.20954) Two-Family Dwelling    RT-2     
+ 507 09    12813181260000  (-123.1091 49.21659) One-Family Dwelling    RS-1     
+ 508 09    13664191940028  (-123.0989 49.26083) Commercial             C-3A     
+ 509 09    23720312080062  (-123.0295 49.23574) Comprehensive Develop~ CD-1 (31~
+ 510 09    17799216380000  (-123.0844 49.22151) One-Family Dwelling    RS-1     
+ 511 09    7664122170003    (-123.143 49.26204) Multi-Family Dwelling  RM-3     
+ 512 09    12132832990001    (-123.1398 49.206) Multi-Family Dwelling  RM-3A    
+ 513 09    2630077440015   (-123.1612 49.27241) Multi-Family Dwelling  RM-4     
+ 514 09    29148608030120  (-123.1225 49.27619) Comprehensive Develop~ DD       
+ 515 09    23707266660000  (-123.0581 49.24553) Two-Family Dwelling    RT-11    
+ 516 09    26597117280043  (-123.1254 49.28822) Comprehensive Develop~ CD-1 (25~
+ 517 09    13640170030059   (-123.1137 49.2673) Commercial             C-3A     
+ 518 09    21650270980002  (-123.0531 49.26152) Comprehensive Develop~ CD-1 (16~
+ 519 09    7686149060014   (-123.1286 49.25846) Multi-Family Dwelling  RM-3     
+ 520 09    4692087720000   (-123.1541 49.25595) One-Family Dwelling    RS-1     
+ 521 09    23770275910045  (-123.0527 49.23978) Commercial             C-2      
+ 522 09    29129614950115  (-123.1288 49.27598) Comprehensive Develop~ CD-1 (54~
+ 523 09    13634186500027   (-123.102 49.27101) Comprehensive Develop~ CD-1 (51~
+ 524 09    13642190370027   (-123.0996 49.2676) Light Industrial       IC-3     
+ 525 09    19244721150000  (-123.0683 49.24367) One-Family Dwelling    RS-1     
+ 526 09    14586251230000  (-123.0672 49.28392) Industrial             M-2      
+ 527 09    20596277230000    (-123.046 49.2785) One-Family Dwelling    RS-1     
+ 528 09    14255568350020  (-123.0602 49.28876) Multi-Family Dwelling  RM-3A    
+ 529 09    26600118510047  (-123.1242 49.28684) Comprehensive Develop~ CD-1 (44~
+ 530 09    26120605980221  (-123.1251 49.28108) Comprehensive Develop~ CD-1 (32~
+ 531 09    5091765960005   (-123.1549 49.22827) Commercial             C-2      
+ 532 09    5733054370000   (-123.1747 49.24069) One-Family Dwelling    RS-5     
+ 533 09    27601119060041  (-123.1237 49.28487) Comprehensive Develop~ CD-1 (17~
+ 534 09    29148606290103  (-123.1212 49.27698) Comprehensive Develop~ DD       
+ 535 09    13579190930017  (-123.0984 49.28443) Comprehensive Develop~ CD-1 (36~
+ 536 09    30157606020314  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+ 537 09    16190750050028  (-123.1019 49.23279) Commercial             C-2      
+ 538 09    29156602960051  (-123.1167 49.27801) Comprehensive Develop~ DD       
+ 539 09    7646153330021   (-123.1234 49.26534) Multi-Family Dwelling  FM-1     
+ 540 09    29138604990300  (-123.1207 49.27858) Comprehensive Develop~ DD       
+ 541 09    23720312080041  (-123.0295 49.23574) Comprehensive Develop~ CD-1 (31~
+ 542 09    2648090960054   (-123.1512 49.26463) Multi-Family Dwelling  RM-4     
+ 543 09    30605186950021  (-123.1004 49.27521) Comprehensive Develop~ CD-1 (26~
+ 544 09    5077739980018    (-123.1606 49.2366) Multi-Family Dwelling  RM-3     
+ 545 09    25243821160000  (-123.0684 49.21327) One-Family Dwelling    RS-1     
+ 546 09    24755305670000  (-123.0354 49.23047) One-Family Dwelling    RS-1     
+ 547 09    17210807050015  (-123.0913 49.21881) Commercial             C-1      
+ 548 09    26602156080082   (-123.115 49.27874) Comprehensive Develop~ DD       
+ 549 09    29156602510102   (-123.117 49.27827) Comprehensive Develop~ DD       
+ 550 09    26602156080351  (-123.1152 49.27853) Comprehensive Develop~ DD       
+ 551 09    10122765440000  (-123.1446 49.22813) One-Family Dwelling    RS-3     
+ 552 09    6085790020019     (-123.155 49.2261) Comprehensive Develop~ CD-1 (44~
+ 553 09    12135832930011  (-123.1383 49.20599) Multi-Family Dwelling  RM-3A    
+ 554 09    23284718340000   (-123.041 49.24107) One-Family Dwelling    RS-1     
+ 555 09    5733060700000   (-123.1688 49.24014) One-Family Dwelling    RS-5     
+ 556 09    20570277120000  (-123.0463 49.28837) One-Family Dwelling    RS-1     
+ 557 09    1678028120000   (-123.1997 49.26159) One-Family Dwelling    RS-1     
+ 558 09    2642072820001    (-123.1651 49.2672) Two-Family Dwelling    RT-8     
+ 559 09    2642077670001   (-123.1608 49.26754) Two-Family Dwelling    RT-8     
+ 560 09    7654146850004   (-123.1295 49.26276) Multi-Family Dwelling  RM-3     
+ 561 09    7150686950029   (-123.1272 49.25807) Commercial             C-2      
+ 562 09    11165758720008  (-123.1177 49.22731) Comprehensive Develop~ CD-1 (48~
+ 563 09    29134614980143  (-123.1276 49.27459) Comprehensive Develop~ CD-1 (48~
+ 564 09    10150758070017  (-123.1284 49.22995) Comprehensive Develop~ CD-1 (45~
+ 565 09    26161599940106   (-123.1124 49.2789) Comprehensive Develop~ DD       
+ 566 09    17814184330000  (-123.1049 49.21614) One-Family Dwelling    RS-1     
+ 567 09    26126595950125  (-123.1189 49.28365) Comprehensive Develop~ CD-1 (41~
+ 568 09    20586274350000  (-123.0512 49.28413) One-Family Dwelling    RS-1     
+ 569 09    7643134020027   (-123.1356 49.26606) Multi-Family Dwelling  FM-1     
+ 570 09    4710083080020   (-123.1581 49.24924) Comprehensive Develop~ CD-1 (78)
+ 571 09    30617124080024  (-123.1328 49.27473) Comprehensive Develop~ CD-1 (25~
+ 572 09    1646024450000   (-123.2078 49.26665) One-Family Dwelling    RS-1     
+ 573 09    7646122720003   (-123.1422 49.26532) Commercial             C-3A     
+ 574 09    26589186860020  (-123.1005 49.28203) Historical Area        HA-2     
+ 575 09    1683034370000   (-123.1901 49.26105) One-Family Dwelling    RS-1     
+ 576 09    11159752290000  (-123.1242 49.23162) One-Family Dwelling    RS-1     
+ 577 09    2650073630063   (-123.1639 49.26411) Commercial             C-2C1    
+ 578 09    12830152950001  (-123.1263 49.20868) Multi-Family Dwelling  RM-3A    
+ 579 09    30167604540238  (-123.1123 49.27406) Comprehensive Develop~ CD-1 (42~
+ 580 09    5742081880013   (-123.1566 49.23707) Comprehensive Develop~ CD-1 (26~
+ 581 09    27605119050011  (-123.1264 49.28324) Multi-Family Dwelling  RM-5B    
+ 582 09    14592265950000  (-123.0581 49.28052) Multi-Family Dwelling  RM-8A    
+ 583 09    7643134380023   (-123.1351 49.26588) Multi-Family Dwelling  FM-1     
+ 584 09    19221741220000  (-123.0821 49.23613) One-Family Dwelling    RS-1     
+ 585 09    21611280350000  (-123.0431 49.27254) One-Family Dwelling    RS-1     
+ 586 09    2636078080100   (-123.1589 49.26974) Multi-Family Dwelling  RM-4     
+ 587 09    20606298770000  (-123.0316 49.27435) One-Family Dwelling    RS-1     
+ 588 09    26590124460082  (-123.1156 49.28631) Comprehensive Develop~ CD-1 (44~
+ 589 09    10758147360000  (-123.1307 49.23003) One-Family Dwelling    RS-1     
+ 590 09    23316718080071  (-123.0262 49.23514) Comprehensive Develop~ CD-1 (31~
+ 591 09    16210719020107  (-123.0895 49.24429) Commercial             C-2      
+ 592 09    19218735320000  (-123.0833 49.23747) One-Family Dwelling    RS-1     
+ 593 09    26592116040183  (-123.1267 49.28907) Comprehensive Develop~ DD       
+ 594 09    2670087980009   (-123.1534 49.26072) Commercial             C-8      
+ 595 09    20590275430032  (-123.0484 49.28141) Commercial             C-2C1    
+ 596 09    29138604990008   (-123.121 49.27818) Comprehensive Develop~ DD       
+ 597 09    28583110520071  (-123.1322 49.29235) Comprehensive Develop~ CD-1 (32~
+ 598 09    4057707860000   (-123.1719 49.25032) One-Family Dwelling    RS-1     
+ 599 09    26590172290009  (-123.1063 49.28212) Comprehensive Develop~ DD       
+ 600 09    29134614980284  (-123.1276 49.27459) Comprehensive Develop~ CD-1 (48~
+ 601 09    2643072830003   (-123.1649 49.26668) Two-Family Dwelling    RT-8     
+ 602 09    29138614930264  (-123.1271 49.27435) Comprehensive Develop~ DD       
+ 603 09    8739130190003   (-123.1368 49.24155) One-Family Dwelling    RS-5     
+ 604 09    26600118510035  (-123.1242 49.28684) Comprehensive Develop~ CD-1 (44~
+ 605 09    2636090950032   (-123.1511 49.27011) Multi-Family Dwelling  RM-4     
+ 606 09    8739146800000   (-123.1308 49.23748) One-Family Dwelling    RS-5     
+ 607 09    29160604910111   (-123.117 49.27595) Comprehensive Develop~ DD       
+ 608 09    5078755050011    (-123.1618 49.2323) Multi-Family Dwelling  RM-3     
+ 609 09    23304715340046  (-123.0318 49.24006) Comprehensive Develop~ CD-1 (22~
+ 610 09    12125827840033  (-123.1419 49.20875) Comprehensive Develop~ CD-1 (51~
+ 611 09    11811170800000   (-123.114 49.21754) One-Family Dwelling    RS-1     
+ 612 09    26130595020024  (-123.1165 49.28321) Comprehensive Develop~ CD-1 (41~
+ 613 09    1019636570000    (-123.221 49.26994) One-Family Dwelling    RS-1     
+ 614 09    23315715210000  (-123.0268 49.23827) One-Family Dwelling    RS-1     
+ 615 09    18839285720020  (-123.0435 49.20602) Comprehensive Develop~ CD-1 (24~
+ 616 09    13638182500058  (-123.1064 49.27007) Comprehensive Develop~ CD-1 (46~
+ 617 09    26600116930196  (-123.1269 49.28859) Comprehensive Develop~ DD       
+ 618 09    21611296540000    (-123.0351 49.272) One-Family Dwelling    RS-1     
+ 619 09    4698087060000   (-123.1554 49.25326) One-Family Dwelling    RS-1     
+ 620 09    29126608920135  (-123.1269 49.27785) Comprehensive Develop~ DD       
+ 621 09    29148606290128  (-123.1212 49.27698) Comprehensive Develop~ DD       
+ 622 09    30159607880255  (-123.1178 49.27359) Comprehensive Develop~ CD-1 (32~
+ 623 09    2640058090089   (-123.1735 49.26854) Multi-Family Dwelling  RM-4     
+ 624 09    15692225360000  (-123.0789 49.25418) Two-Family Dwelling    RT-10    
+ 625 09    9164743490000   (-123.1198 49.23472) One-Family Dwelling    RS-1     
+ 626 09    23276728090013  (-123.0516 49.24049) Comprehensive Develop~ CD-1 (32~
+ 627 09    20566275470000  (-123.0478 49.29098) One-Family Dwelling    RS-1     
+ 628 09    19739243820000  (-123.0664 49.23646) One-Family Dwelling    RS-1     
+ 629 09    28600113370033  (-123.1316 49.29175) Comprehensive Develop~ CD-1 (32~
+ 630 09    9694172630000   (-123.1108 49.25412) One-Family Dwelling    RS-7     
+ 631 09    20570275490000  (-123.0482 49.28901) One-Family Dwelling    RS-1     
+ 632 09    13638179730047  (-123.1075 49.27041) Comprehensive Develop~ CD-1 (45~
+ 633 09    26600115960134   (-123.129 49.28901) Comprehensive Develop~ DD       
+ 634 09    14687228460000  (-123.0767 49.25642) Two-Family Dwelling    RT-2     
+ 635 09    26579178530033   (-123.103 49.28379) Historical Area        HA-2     
+ 636 09    7688138970141   (-123.1324 49.25814) Multi-Family Dwelling  RM-3     
+ 637 09    7686130680029   (-123.1374 49.25861) Multi-Family Dwelling  RM-3     
+ 638 09    19730233070000  (-123.0735 49.24036) One-Family Dwelling    RS-1     
+ 639 09    2664084530119   (-123.1574 49.26238) Comprehensive Develop~ CD-1 (34~
+ 640 09    29138612930065  (-123.1256 49.27531) Comprehensive Develop~ DD       
+ 641 09    4093722970080   (-123.1495 49.24225) One-Family Dwelling    RS-1     
+ 642 09    14586255050038   (-123.063 49.28416) Multi-Family Dwelling  RM-3A    
+ 643 09    2070636270001   (-123.1688 49.26999) Two-Family Dwelling    RT-8     
+ 644 09    30126616030135  (-123.1313 49.27544) Comprehensive Develop~ CD-1 (42~
+ 645 09    26608120970157  (-123.1266 49.28065) Comprehensive Develop~ CD-1 (38~
+ 646 09    25819251760000  (-123.0606 49.21308) One-Family Dwelling    RS-1     
+ 647 09    25811270240000  (-123.0541 49.21867) One-Family Dwelling    RS-1     
+ 648 09    30612157030367  (-123.1196 49.27382) Comprehensive Develop~ CD-1 (32~
+ 649 09    24284796350000  (-123.0463 49.22223) One-Family Dwelling    RS-1     
+ 650 09    4090722020058   (-123.1517 49.24445) One-Family Dwelling    RS-1     
+ 651 09    27601116940046  (-123.1282 49.28787) Comprehensive Develop~ CD-1 (20~
+ 652 09    25318818840009  (-123.0268 49.21059) Comprehensive Develop~ CD-1 (11~
+ 653 09    10124790200000  (-123.1431 49.22609) One-Family Dwelling    RS-6     
+ 654 09    2640073090041    (-123.1637 49.2684) Multi-Family Dwelling  RM-4     
+ 655 09    29148608930120   (-123.1231 49.2757) Comprehensive Develop~ DD       
+ 656 09    29126608950105   (-123.127 49.27832) Comprehensive Develop~ DD       
+ 657 09    30157606020151  (-123.1178 49.27506) Comprehensive Develop~ CD-1 (32~
+ 658 09    27605113080007  (-123.1361 49.28873) Multi-Family Dwelling  RM-5A    
+ 659 09    27613119960069  (-123.1309 49.27842) Comprehensive Develop~ CD-1 (23~
+ 660 09    2654087430036   (-123.1541 49.26315) Commercial             C-7      
+ 661 09    14604267370000     (-123.057 49.275) Two-Family Dwelling    RT-5N    
+ 662 09    13645190710061  (-123.0992 49.26563) Light Industrial       IC-3     
+ 663 09    3696050750000   (-123.1776 49.25491) One-Family Dwelling    RS-1     
+ 664 09    20587277950000   (-123.0446 49.2831) One-Family Dwelling    RS-1     
+ 665 09    23730253120000  (-123.0626 49.23953) Multi-Family Dwelling  RM-7     
+ 666 09    21641280550000  (-123.0425 49.26501) One-Family Dwelling    RS-1     
+ 667 09    2634084040011    (-123.1572 49.2706) Multi-Family Dwelling  RM-4     
+ 668 09    13598192400000   (-123.096 49.27732) Two-Family Dwelling    RT-3     
+ 669 09    23319725120008  (-123.0247 49.23422) Comprehensive Develop~ CD-1 (54~
+ 670 09    13664195950016  (-123.0967 49.26134) Commercial             C-3A     
+ 671 09    14646232640004  (-123.0743 49.26394) Multi-Family Dwelling  RM-4     
+ 672 09    16215735130000  (-123.0861 49.23802) One-Family Dwelling    RS-1     
+ 673 09    7170684050130   (-123.1159 49.25866) Comprehensive Develop~ CD-1 (16~
+ 674 09    30138616070028  (-123.1274 49.27367) Comprehensive Develop~ CD-1 (36~
+ 675 09    2650050060038   (-123.1768 49.26413) Commercial             C-2C1    
+ 676 09    23720312080118  (-123.0295 49.23574) Comprehensive Develop~ CD-1 (31~
+ 677 09    26597118030055   (-123.1239 49.2878) Comprehensive Develop~ DD       
+ 678 09    13650217470012  (-123.0822 49.26271) Multi-Family Dwelling  RM-4N    
+ 679 09    29148604510291  (-123.1195 49.27811) Comprehensive Develop~ DD       
+ 680 09    4083715740003   (-123.1564 49.24805) Comprehensive Develop~ CD-1 (78)
+ 681 09    4726054790000   (-123.1736 49.24353) One-Family Dwelling    RS-5     
+ 682 09    13634179860008  (-123.1066 49.27145) Comprehensive Develop~ CD-1 (45~
+ 683 09    29138604990010   (-123.121 49.27818) Comprehensive Develop~ DD       
+ 684 09    8717148340000   (-123.1298 49.24626) One-Family Dwelling    RS-5     
+ 685 09    2650072650015    (-123.1655 49.2643) Commercial             C-2C1    
+ 686 09    27615114360000  (-123.1407 49.28331) Multi-Family Dwelling  RM-5A    
+ 687 09    18830276340032  (-123.0512 49.20706) Comprehensive Develop~ CD-1 (24~
+ 688 09    19230744320000  (-123.0766 49.23425) One-Family Dwelling    RS-1     
+ 689 09    2650041930004   (-123.1822 49.26456) Multi-Family Dwelling  RM-4     
+ 690 09    23308718950072  (-123.0304 49.23705) Comprehensive Develop~ CD-1 (31~
+ 691 09    23728267050040  (-123.0586 49.24092) Comprehensive Develop~ CD-1 (48~
+ 692 09    13664191940008  (-123.0984 49.26083) Commercial             C-3A     
+ 693 09    30162604050126  (-123.1156 49.27583) Comprehensive Develop~ CD-1 (32~
+ 694 09    3707032860000   (-123.1913 49.25081) One-Family Dwelling    RS-5     
+ 695 09    26120605980102  (-123.1251 49.28108) Comprehensive Develop~ CD-1 (32~
+ 696 09    16211750430000  (-123.0896 49.23191) One-Family Dwelling    RS-1     
+ 697 09    21630300480000  (-123.0322 49.26912) One-Family Dwelling    RS-1     
+ 698 09    21650270970005  (-123.0551 49.26287) Comprehensive Develop~ CD-1 (30~
+ 699 09    15691214470000   (-123.0843 49.2557) One-Family Dwelling    RS-1     
+ 700 09    2640058090066   (-123.1722 49.26852) Multi-Family Dwelling  RM-4     
+ 701 09    26589178050065  (-123.1037 49.28258) Historical Area        HA-2     
+ 702 09    14631234430035  (-123.0727 49.26897) Multi-Family Dwelling  RM-4     
+ 703 09    23294726820000  (-123.0435 49.23653) One-Family Dwelling    RS-1     
+ 704 09    29157615050234  (-123.1261 49.27387) Comprehensive Develop~ CD-1 (18~
+ 705 09    12130823930048  (-123.1408 49.21253) Commercial             C-2      
+ 706 09    29156602960027  (-123.1167 49.27801) Comprehensive Develop~ DD       
+ 707 09    13217590390000  (-123.0851 49.28036) Two-Family Dwelling    RT-3     
+ 708 09    26592117980065  (-123.1242 49.28817) Comprehensive Develop~ CD-1 (44~
+ 709 09    27601117960134  (-123.1267 49.28687) Comprehensive Develop~ CD-1 (31~
+ 710 09    30617121240003   (-123.1346 49.2766) One-Family Dwelling    RS-1     
+ 711 09    23716317640003  (-123.0253 49.23644) Comprehensive Develop~ CD-1 (24~
+ 712 09    29138606040073  (-123.1211 49.27759) Comprehensive Develop~ DD       
+ 713 09    23320718950443  (-123.0238 49.23264) Commercial             C-2      
+ 714 09    2650095080026     (-123.15 49.26347) Commercial             C-3A     
+ 715 09    20565275800000  (-123.0471 49.29139) One-Family Dwelling    RS-1     
+ 716 09    27605114060014  (-123.1343 49.28751) Multi-Family Dwelling  RM-5     
+ 717 09    10121790700000  (-123.1462 49.22566) One-Family Dwelling    RS-6     
+ 718 09    27604119540064  (-123.1256 49.28321) Comprehensive Develop~ DD       
+ 719 09    16748216250000  (-123.0842 49.23402) One-Family Dwelling    RS-1     
+ 720 09    2634073960004   (-123.1623 49.27023) Two-Family Dwelling    RT-8     
+ 721 09    2642078980002   (-123.1577 49.26716) Two-Family Dwelling    RT-8     
+ 722 09    24758266960000  (-123.0551 49.22912) One-Family Dwelling    RS-1     
+ 723 09    8097717260000   (-123.1485 49.24695) One-Family Dwelling    RS-5     
+ 724 09    2650084320124   (-123.0588 49.26192) One-Family Dwelling    RS-1     
+ 725 09    14638255530001  (-123.0627 49.26618) Two-Family Dwelling    RT-5     
+ 726 09    2643077050000   (-123.1621 49.26681) Two-Family Dwelling    RT-8     
+ 727 09    13642190370048   (-123.0996 49.2676) Light Industrial       IC-3     
+ 728 09    3750040240024   (-123.1841 49.23449) Commercial             C-2      
+ 729 09    11170792330008  (-123.1169 49.22442) Comprehensive Develop~ CD-1 (56~
+ 730 09    21648277760000  (-123.0453 49.26269) One-Family Dwelling    RS-1     
+ 731 09    30126617060073   (-123.132 49.27417) Comprehensive Develop~ BCPED    
+ 732 09    29138602080050  (-123.1179 49.27974) Comprehensive Develop~ CD-1 (41~
+ 733 09    27605114060064  (-123.1343 49.28751) Multi-Family Dwelling  RM-5     
+ 734 09    27605119840071  (-123.1258 49.28232) Comprehensive Develop~ CD-1 (44~
+ 735 09    26590115040018  (-123.1279 49.29013) Comprehensive Develop~ CD-1 (40~
+ 736 09    13650182980030  (-123.1056 49.26274) Commercial             C-3A     
+ 737 09    26172592770171  (-123.1078 49.27917) Comprehensive Develop~ CD-1 (26~
+ 738 09    29124608970016  (-123.1281 49.27884) Comprehensive Develop~ DD       
+ 739 09    20576270470000  (-123.0557 49.28699) One-Family Dwelling    RS-1     
+ 740 09    11175790550028    (-123.114 49.2246) Comprehensive Develop~ CD-1 (10~
+ 741 09    29126608920095  (-123.1269 49.27785) Comprehensive Develop~ DD       
+ 742 09    13638186080076  (-123.1023 49.27003) Comprehensive Develop~ CD-1 (52~
+ 743 09    7640149040048   (-123.1267 49.26556) Multi-Family Dwelling  FM-1     
+ 744 09    25305810270097  (-123.0384 49.21946) Comprehensive Develop~ CD-1 (68)
+ 745 09    8130721060000   (-123.1387 49.24514) One-Family Dwelling    RS-5     
+ 746 09    4093722970117   (-123.1495 49.24225) One-Family Dwelling    RS-1     
+ 747 09    23320715890000   (-123.024 49.23661) Comprehensive Develop~ CD-1 (24~
+ 748 09    7169632590016   (-123.1154 49.26948) Comprehensive Develop~ FCCDD    
+ 749 09    25305810270006   (-123.039 49.22007) Comprehensive Develop~ CD-1 (68)
+ 750 09    30616138940124  (-123.1266 49.27268) Comprehensive Develop~ CD-1 (36~
+ 751 09    20585305570000   (-123.027 49.28502) One-Family Dwelling    RS-1     
+ 752 09    23770266380078   (-123.0603 49.2425) Commercial             C-2      
+ 753 09    5747079350010   (-123.1595 49.23584) Multi-Family Dwelling  RM-3     
+ 754 09    26138600890082  (-123.1175 49.28053) Comprehensive Develop~ CD-1 (52~
+ 755 09    30161612980043   (-123.1207 49.2723) Comprehensive Develop~ CD-1 (29~
+ 756 09    19230719170000  (-123.0767 49.24425) One-Family Dwelling    RS-1     
+ 757 09    2638070440002   (-123.1675 49.26915) Two-Family Dwelling    RT-8     
+ 758 09    5735121040000   (-123.1453 49.23967) One-Family Dwelling    RS-5     
+ 759 09    29138604920012    (-123.1205 49.278) Comprehensive Develop~ DD       
+ 760 09    17803195770000   (-123.0984 49.2212) One-Family Dwelling    RS-1     
+ 761 09    17790197360000   (-123.096 49.22528) One-Family Dwelling    RS-1     
+ 762 09    13770191030086  (-123.0993 49.26331) Commercial             C-3A     
+ 763 09    23320718950609  (-123.0238 49.23264) Commercial             C-2      
+ 764 09    20580275290000  (-123.0485 49.28503) One-Family Dwelling    RS-1     
+ 765 09    30617121240102  (-123.1342 49.27623) One-Family Dwelling    RS-1     
+ 766 09    20296604450000  (-123.0367 49.27468) One-Family Dwelling    RS-1     
+ 767 09    26138600890213  (-123.1175 49.28053) Comprehensive Develop~ CD-1 (52~
+ 768 09    30126616030057  (-123.1313 49.27544) Comprehensive Develop~ CD-1 (42~
+ 769 09    23770278670016   (-123.0507 49.2386) Comprehensive Develop~ CD-1 (52~
+ 770 09    23279747780001   (-123.0497 49.2331) Two-Family Dwelling    RT-11N   
+ 771 09    21298612390000  (-123.0341 49.27082) One-Family Dwelling    RS-1     
+ 772 09    23304716940136  (-123.0324 49.23911) Comprehensive Develop~ CD-1 (22~
+ 773 09    26592134050260  (-123.1136 49.28431) Comprehensive Develop~ DD       
+ 774 09    22706279290000  (-123.0436 49.24648) One-Family Dwelling    RS-1     
+ 775 09    26600116930090  (-123.1269 49.28859) Comprehensive Develop~ DD       
+ 776 09    30162604050068  (-123.1156 49.27583) Comprehensive Develop~ CD-1 (32~
+ 777 09    26120604040305  (-123.1242 49.28196) Comprehensive Develop~ CD-1 (22~
+ 778 09    26600116040292  (-123.1282 49.28833) Comprehensive Develop~ CD-1 (31~
+ 779 09    1640035070021   (-123.1899 49.26895) Multi-Family Dwelling  RM-3A    
+ 780 09    2648095400008   (-123.1494 49.26442) Multi-Family Dwelling  RM-4     
+ 781 09    2670087580017   (-123.1542 49.26073) Commercial             C-7      
+ 782 09    5078758300000   (-123.1611 49.23023) One-Family Dwelling    RS-5     
+ 783 09    15770211600018  (-123.0888 49.25585) Commercial             C-2      
+ 784 09    2670040750000   (-123.1845 49.26368) One-Family Dwelling    RS-5     
+ 785 09    29148612020030  (-123.1236 49.27491) Historical Area        HA-3     
+ 786 09    16210729060033    (-123.09 49.24063) Commercial             C-2      
+ 787 09    29138614930036  (-123.1271 49.27435) Comprehensive Develop~ DD       
+ 788 09    29134608970287    (-123.1243 49.277) Comprehensive Develop~ DD       
+ 789 09    16723199310000  (-123.0929 49.24385) One-Family Dwelling    RS-1     
+ 790 09    15697184330001   (-123.104 49.25303) One-Family Dwelling    RS-7     
+ 791 09    14650253690000  (-123.0646 49.26258) Two-Family Dwelling    RT-5N    
+ 792 09    5742050470000   (-123.1771 49.23786) One-Family Dwelling    RS-5     
+ 793 09    29124614070055  (-123.1309 49.27706) Comprehensive Develop~ DD       
+ 794 09    27601119060028  (-123.1237 49.28487) Comprehensive Develop~ CD-1 (17~
+ 795 09    23722278140000  (-123.0474 49.24166) Multi-Family Dwelling  RM-7     
+ 796 09    9693170480000   (-123.1138 49.25457) One-Family Dwelling    RS-7     
+ 797 09    4090717090027   (-123.1546 49.24712) Comprehensive Develop~ CD-1 (94)
+ 798 09    12130833510007  (-123.1411 49.20564) Multi-Family Dwelling  RM-3A    
+ 799 09    13648206650010   (-123.0897 49.2637) Multi-Family Dwelling  RM-4     
+ 800 09    2642097380069   (-123.1473 49.26709) Multi-Family Dwelling  RM-4     
+ 801 09    30190605770063  (-123.1005 49.27359) Comprehensive Develop~ CD-1 (26~
+ 802 09    1646020350000   (-123.2136 49.26674) One-Family Dwelling    RS-1     
+ 803 09    26600115960110   (-123.129 49.28901) Comprehensive Develop~ DD       
+ 804 09    13186684080029  (-123.1029 49.25814) Multi-Family Dwelling  RM-4     
+ 805 09    17795243720000  (-123.0672 49.22238) One-Family Dwelling    RS-1     
+ 806 09    2648087640002   (-123.1544 49.26469) Multi-Family Dwelling  RM-4     
+ 807 09    2688072870000   (-123.1652 49.25886) One-Family Dwelling    RS-5     
+ 808 09    27607116080030   (-123.134 49.28453) Multi-Family Dwelling  RM-5     
+ 809 09    13645194050015  (-123.0982 49.26571) Light Industrial       IC-3     
+ 810 09    5731071050000   (-123.1678 49.24163) One-Family Dwelling    RS-5     
+ 811 09    15235698140000  (-123.0729 49.25139) Two-Family Dwelling    RT-10    
+ 812 09    22701297130000   (-123.0362 49.2499) One-Family Dwelling    RS-1     
+ 813 09    29156604070516  (-123.1185 49.27785) Comprehensive Develop~ DD       
+ 814 09    17821195670000   (-123.0984 49.2137) One-Family Dwelling    RS-1     
+ 815 09    13640210080102  (-123.0882 49.26609) Multi-Family Dwelling  RM-4N    
+ 816 09    7690159010010   (-123.1217 49.25711) Comprehensive Develop~ CD-1 (30~
+ 817 09    7648165900028   (-123.1152 49.26405) Commercial             C-3A     
+ 818 09    4730071870000   (-123.1663 49.24256) One-Family Dwelling    RS-5     
+ 819 09    29134612480126  (-123.1258 49.27578) Comprehensive Develop~ DD       
+ 820 09    2642097080005   (-123.1479 49.26684) Multi-Family Dwelling  RM-4     
+ 821 09    29160604910038   (-123.117 49.27595) Comprehensive Develop~ DD       
+ 822 09    7643130990152    (-123.138 49.26627) Commercial             C-3A     
+ 823 09    24765278840000  (-123.0507 49.22649) One-Family Dwelling    RS-1     
+ 824 09    20588271410000  (-123.0536 49.28232) One-Family Dwelling    RS-1     
+ 825 09    16210712970014  (-123.0906 49.24676) Commercial             C-2      
+ 826 09    28115573060025  (-123.1281 49.29054) Comprehensive Develop~ CD-1 (31~
+ 827 09    27606115590031  (-123.1335 49.28636) Multi-Family Dwelling  RM-5     
+ 828 09    7688159610028   (-123.1211 49.25796) Multi-Family Dwelling  RM-4     
+ 829 09    27115607970002  (-123.1364 49.28548) Multi-Family Dwelling  RM-5     
+ 830 09    16211730580000  (-123.0889 49.23902) One-Family Dwelling    RS-1     
+ 831 09    26592117710051  (-123.1239 49.28885) Comprehensive Develop~ DD       
+ 832 09    26130595020002  (-123.1165 49.28321) Comprehensive Develop~ CD-1 (41~
+ 833 09    23718314940013  (-123.0272 49.23558) Comprehensive Develop~ CD-1 (31~
+ 834 09    27615118580019  (-123.1348 49.27951) Multi-Family Dwelling  RM-5A    
+ 835 09    26590115040032  (-123.1279 49.29013) Comprehensive Develop~ CD-1 (40~
+ 836 09    11165758140016  (-123.1176 49.22878) Comprehensive Develop~ CD-1 (39~
+ 837 09    14631250270002  (-123.0684 49.26883) Two-Family Dwelling    RT-5     
+ 838 09    27601117960180  (-123.1267 49.28687) Comprehensive Develop~ CD-1 (31~
+ 839 09    17811190840000  (-123.0983 49.21729) One-Family Dwelling    RS-1     
+ 840 09    27611108050005  (-123.1438 49.28947) Multi-Family Dwelling  RM-5B    
+ 841 09    15701222210000  (-123.0813 49.25112) Two-Family Dwelling    RT-10    
+ 842 09    29148604510033  (-123.1195 49.27811) Comprehensive Develop~ DD       
+ 843 09    26592172510028  (-123.1063 49.28112) Comprehensive Develop~ CD-1 (42~
+ 844 09    14685251150002  (-123.0676 49.25708) Two-Family Dwelling    RT-5     
+ 845 09    29156602050020   (-123.1165 49.2788) Comprehensive Develop~ CD-1 (32~
+ 846 09    12130826730055  (-123.1407 49.20888) Commercial             C-2      
+ 847 09    19726235950000  (-123.0724 49.24323) One-Family Dwelling    RS-1     
+ 848 09    27609110950014  (-123.1394 49.28737) Multi-Family Dwelling  RM-5A    
+ 849 09    7654120060032   (-123.1455 49.26247) Multi-Family Dwelling  RM-3     
+ 850 09    2638084480025   (-123.1564 49.26881) Multi-Family Dwelling  RM-4     
+ 851 09    23710292400000  (-123.0383 49.24424) One-Family Dwelling    RS-1     
+ 852 09    10097765660000  (-123.1491 49.22781) One-Family Dwelling    RS-3     
+ 853 09    4093722350073   (-123.1517 49.24356) Comprehensive Develop~ CD-1 (22)
+ 854 09    14255566580031  (-123.0581 49.28972) Multi-Family Dwelling  RM-3A    
+ 855 09    23300742460000  (-123.0427 49.23417) One-Family Dwelling    RS-1     
+ 856 09    20592300310000  (-123.0302 49.28049) One-Family Dwelling    RS-1     
+ 857 09    24770317060045   (-123.026 49.23192) Commercial             C-2      
+ 858 09    30603186060018  (-123.1013 49.27556) Comprehensive Develop~ CD-1 (26~
+ 859 09    14665253980002  (-123.0646 49.26016) Multi-Family Dwelling  RM-4     
+ 860 09    24753250440000  (-123.0637 49.23095) One-Family Dwelling    RS-1     
+ 861 09    1690034690000   (-123.1889 49.25832) One-Family Dwelling    RS-1     
+ 862 09    13654184950014  (-123.1034 49.26232) Multi-Family Dwelling  RM-4     
+ 863 09    27613119930048   (-123.1303 49.2788) Comprehensive Develop~ CD-1 (28~
+ 864 09    26589178080084  (-123.1037 49.28229) Historical Area        HA-2     
+ 865 09    30161606550097  (-123.1166 49.27363) Comprehensive Develop~ CD-1 (32~
+ 866 09    23718314060195  (-123.0284 49.23614) Comprehensive Develop~ CD-1 (31~
+ 867 09    20580271860000  (-123.0524 49.28452) One-Family Dwelling    RS-1     
+ 868 09    25305810270052  (-123.0384 49.21946) Comprehensive Develop~ CD-1 (68)
+ 869 09    23276728090022  (-123.0523 49.24128) Multi-Family Dwelling  RM-7     
+ 870 09    30161606550108  (-123.1166 49.27363) Comprehensive Develop~ CD-1 (32~
+ 871 09    13690170870001  (-123.1136 49.25694) Two-Family Dwelling    RT-5     
+ 872 09    3725042510000    (-123.1805 49.2445) One-Family Dwelling    RS-5     
+ 873 09    15770211600062  (-123.0888 49.25585) Commercial             C-2      
+ 874 09    2650050060057   (-123.1768 49.26413) Commercial             C-2C1    
+ 875 09    4093722970049    (-123.151 49.24268) Comprehensive Develop~ CD-1 (22)
+ 876 09    29156604070380  (-123.1185 49.27785) Comprehensive Develop~ DD       
+ 877 09    26161599060234  (-123.1102 49.27909) Comprehensive Develop~ CD-1 (41~
+ 878 09    27616119960090  (-123.1338 49.27737) Multi-Family Dwelling  RM-5A    
+ 879 09    13228684490001  (-123.0782 49.25704) Two-Family Dwelling    RT-5     
+ 880 09    7648159940113   (-123.1205 49.26397) Comprehensive Develop~ CD-1 (35~
+ 881 09    13646212510003   (-123.086 49.26456) Multi-Family Dwelling  RM-4     
+ 882 09    20590275430021  (-123.0484 49.28141) Commercial             C-2C1    
+ 883 09    8150702530012   (-123.1278 49.25208) Commercial             C-2      
+ 884 09    7643124870039   (-123.1396 49.26653) Commercial             C-3A     
+ 885 09    23270706300000  (-123.0562 49.24579) One-Family Dwelling    RS-1     
+ 886 09    7654134480006    (-123.1351 49.2623) Multi-Family Dwelling  RM-3     
+ 887 09    17803201260000  (-123.0935 49.22063) One-Family Dwelling    RS-1     
+ 888 09    16194710650007  (-123.0992 49.24801) One-Family Dwelling    RS-7     
+ 889 09    26597118380100  (-123.1239 49.28729) Comprehensive Develop~ DD       
+ 890 09    9153690540000    (-123.124 49.25658) One-Family Dwelling    RS-7     
+ 891 09    29138608040071  (-123.1227 49.27653) Comprehensive Develop~ DD       
+ 892 09    26589178050058  (-123.1037 49.28258) Historical Area        HA-2     
+ 893 09    14270665090000  (-123.0571 49.26022) Multi-Family Dwelling  RM-12N   
+ 894 09    4083715740094   (-123.1572 49.24819) Comprehensive Develop~ CD-1 (78)
+ 895 09    23770275910016  (-123.0527 49.23978) Commercial             C-2      
+ 896 09    26600117530184  (-123.1256 49.28773) Comprehensive Develop~ CD-1 (26~
+ 897 09    11757182060000  (-123.1085 49.23038) One-Family Dwelling    RS-1     
+ 898 09    27611108050056  (-123.1438 49.28947) Multi-Family Dwelling  RM-5B    
+ 899 09    5731060040000     (-123.17 49.24109) One-Family Dwelling    RS-5     
+ 900 09    29156604070381  (-123.1185 49.27785) Comprehensive Develop~ DD       
+ 901 09    30612157030412  (-123.1203 49.27395) Comprehensive Develop~ CD-1 (32~
+ 902 09    26161599940222  (-123.1115 49.27845) Comprehensive Develop~ CD-1 (41~
+ 903 09    14580265090016  (-123.0594 49.28505) Multi-Family Dwelling  RM-3A    
+ 904 09    2640062350062     (-123.17 49.26866) Commercial             C-2      
+ 905 09    23298715290000   (-123.0378 49.2426) One-Family Dwelling    RS-1     
+ 906 09    29148606030016   (-123.1208 49.2773) Comprehensive Develop~ DD       
+ 907 09    12824123420000  (-123.1448 49.21207) One-Family Dwelling    RS-1     
+ 908 09    16742216120000  (-123.0844 49.23535) One-Family Dwelling    RS-1     
+ 909 09    5731056260000    (-123.1721 49.2411) One-Family Dwelling    RS-5     
+ 910 09    15702187070000  (-123.1027 49.25208) One-Family Dwelling    RS-7     
+ 911 09    23306711560000   (-123.027 49.24279) One-Family Dwelling    RS-1     
+ 912 09    2650078270009   (-123.1593 49.26423) Multi-Family Dwelling  RM-4     
+ 913 09    17819212840000  (-123.0865 49.21358) One-Family Dwelling    RS-1     
+ 914 09    10150752070022  (-123.1286 49.23255) Comprehensive Develop~ CD-1 (29~
+ 915 09    30124616060004  (-123.1327 49.27555) Comprehensive Develop~ CD-1 (25~
+ 916 09    27114603980005  (-123.1341 49.28804) Multi-Family Dwelling  RM-5     
+ 917 09    2084631850002   (-123.1578 49.27118) Multi-Family Dwelling  RM-4     
+ 918 09    14634234710000  (-123.0711 49.26715) Multi-Family Dwelling  RM-4     
+ 919 09    24281790450000  (-123.0493 49.22342) One-Family Dwelling    RS-1     
+ 920 09    17250802770043  (-123.0663 49.22059) Commercial             C-2      
+ 921 09    7646122720051   (-123.1421 49.26515) Commercial             C-3A     
+ 922 09    29138606940136  (-123.1223 49.27707) Comprehensive Develop~ DD       
+ 923 09    3717042200000   (-123.1809 49.24681) One-Family Dwelling    RS-5     
+ 924 09    6842087290004   (-123.1548 49.21109) Comprehensive Develop~ CD-1 (18~
+ 925 09    27612113020018  (-123.1402 49.28584) Commercial             C-5A     
+ 926 09    27601117960268  (-123.1267 49.28687) Comprehensive Develop~ CD-1 (31~
+ 927 09    14665234280000  (-123.0726 49.26022) Two-Family Dwelling    RT-5     
+ 928 09    29138612050115  (-123.1249 49.27579) Comprehensive Develop~ DD       
+ 929 09    13648170960083  (-123.1134 49.26367) Commercial             C-3A     
+ 930 09    29131614930021   (-123.128 49.27558) Comprehensive Develop~ CD-1 (48~
+ 931 09    20590275430019  (-123.0484 49.28141) Commercial             C-2C1    
+ 932 09    9170690030015   (-123.1158 49.25659) Commercial             C-2      
+ 933 09    26172592770009  (-123.1079 49.27966) Comprehensive Develop~ CD-1 (26~
+ 934 09    29138606040144  (-123.1211 49.27759) Comprehensive Develop~ DD       
+ 935 09    29138608980129  (-123.1235 49.27599) Comprehensive Develop~ DD       
+ 936 09    1686028720000   (-123.1978 49.25975) One-Family Dwelling    RS-1     
+ 937 09    2053636960001   (-123.1754 49.26945) Two-Family Dwelling    RT-8     
+ 938 09    17793212270000  (-123.0871 49.22361) One-Family Dwelling    RS-1     
+ 939 09    2640062350015     (-123.17 49.26866) Commercial             C-2      
+ 940 09    5747079350002   (-123.1595 49.23584) Multi-Family Dwelling  RM-3     
+ 941 09    12130833510004  (-123.1411 49.20564) Multi-Family Dwelling  RM-3A    
+ 942 09    29134614980008  (-123.1276 49.27459) Comprehensive Develop~ CD-1 (48~
+ 943 09    28115573060070  (-123.1281 49.29054) Comprehensive Develop~ CD-1 (31~
+ 944 09    6830032570000   (-123.1929 49.23363) One-Family Dwelling    RS-5     
+ 945 09    3690038300019    (-123.186 49.25759) Commercial             C-2      
+ 946 09    27613114340006  (-123.1396 49.28406) Multi-Family Dwelling  RM-5A    
+ 947 09    2648050760001     (-123.1766 49.265) Two-Family Dwelling    RT-7     
+ 948 09    13194664960083  (-123.0975 49.26031) Commercial             C-3A     
+ 949 09    14577265320030  (-123.0588 49.28545) Multi-Family Dwelling  RM-3A    
+ 950 09    29156602960092  (-123.1167 49.27801) Comprehensive Develop~ DD       
+ 951 09    13646190910177  (-123.0996 49.26539) Light Industrial       IC-3     
+ 952 09    29138612930031  (-123.1256 49.27531) Comprehensive Develop~ DD       
+ 953 09    23770275910012  (-123.0527 49.23978) Commercial             C-2      
+ 954 09    29138604990298  (-123.1207 49.27858) Comprehensive Develop~ DD       
+ 955 09    11150750020009   (-123.128 49.23317) Comprehensive Develop~ CD-1 (39~
+ 956 09    21646274870000  (-123.0499 49.26413) One-Family Dwelling    RS-1     
+ 957 09    8150706930022    (-123.128 49.24955) Commercial             C-2      
+ 958 09    27601117960029  (-123.1274 49.28754) Comprehensive Develop~ CD-1 (31~
+ 959 09    26597118380014  (-123.1239 49.28729) Comprehensive Develop~ DD       
+ 960 09    16741212220000   (-123.0876 49.2363) One-Family Dwelling    RS-1     
+ 961 09    26602156080201  (-123.1152 49.27853) Comprehensive Develop~ DD       
+ 962 09    30159607880090  (-123.1182 49.27392) Comprehensive Develop~ CD-1 (32~
+ 963 09    30157614070137   (-123.1249 49.2736) Comprehensive Develop~ CD-1 (26~
+ 964 09    20594277210000  (-123.0458 49.27934) One-Family Dwelling    RS-1     
+ 965 09    30167604920017  (-123.1141 49.27354) Comprehensive Develop~ CD-1 (42~
+ 966 09    2634077980003     (-123.16 49.27065) Multi-Family Dwelling  RM-4     
+ 967 09    8150697850006    (-123.1279 49.2531) Multi-Family Dwelling  RM-3A    
+ 968 09    30603186050001  (-123.1015 49.27644) Comprehensive Develop~ CD-1 (43~
+ 969 09    14650234090005  (-123.0734 49.26264) Multi-Family Dwelling  RM-4N    
+ 970 09    4692084970000   (-123.1558 49.25653) One-Family Dwelling    RS-1     
+ 971 09    26600116930067  (-123.1269 49.28859) Comprehensive Develop~ DD       
+ 972 09    29134602450109  (-123.1198 49.28048) Comprehensive Develop~ DD       
+ 973 09    29156604070162  (-123.1185 49.27757) Comprehensive Develop~ DD       
+ 974 09    30603186060094  (-123.1013 49.27556) Comprehensive Develop~ CD-1 (26~
+ 975 09    29156604070210  (-123.1185 49.27757) Comprehensive Develop~ DD       
+ 976 09    25250812570000  (-123.0664 49.21758) One-Family Dwelling    RS-1     
+ 977 09    6035830200000   (-123.1893 49.23101) One-Family Dwelling    RS-5     
+ 978 09    22688282500000  (-123.0403 49.25534) One-Family Dwelling    RS-1     
+ 979 09    15710230550034  (-123.0758 49.24898) Comprehensive Develop~ CD-1 (42~
+ 980 09    29157604960138  (-123.1173 49.27625) Comprehensive Develop~ DD       
+ 981 09    21631271360000  (-123.0538 49.26822) One-Family Dwelling    RS-1     
+ 982 09    25827251440000  (-123.0627 49.21009) One-Family Dwelling    RS-1     
+ 983 09    2642097380073   (-123.1473 49.26709) Multi-Family Dwelling  RM-4     
+ 984 09    9184747970000    (-123.106 49.23383) One-Family Dwelling    RS-1     
+ 985 09    24758301630000  (-123.0407 49.22954) One-Family Dwelling    RS-1     
+ 986 09    28583110520011  (-123.1322 49.29235) Comprehensive Develop~ CD-1 (32~
+ 987 09    22691282930000    (-123.0393 49.255) One-Family Dwelling    RS-1     
+ 988 09    16717197620000  (-123.0953 49.24537) One-Family Dwelling    RS-1     
+ 989 09    26600117080328   (-123.1256 49.2872) Comprehensive Develop~ CD-1 (34~
+ 990 09    18839250080007  (-123.0651 49.20656) Comprehensive Develop~ CD-1 (26~
+ 991 09    21633300640000  (-123.0316 49.26728) One-Family Dwelling    RS-1     
+ 992 09    4730073570000   (-123.1647 49.24257) One-Family Dwelling    RS-5     
+ 993 09    26120604040293  (-123.1242 49.28196) Comprehensive Develop~ CD-1 (22~
+ 994 09    27609117640001  (-123.1333 49.28274) Multi-Family Dwelling  RM-5B    
+ 995 09    30159607880219  (-123.1178 49.27359) Comprehensive Develop~ CD-1 (32~
+ 996 09    29134612480029  (-123.1258 49.27578) Comprehensive Develop~ DD       
+ 997 09    23733254830000  (-123.0593 49.23915) Multi-Family Dwelling  RM-7     
+ 998 09    3690034680000   (-123.1889 49.25764) One-Family Dwelling    RS-5     
+ 999 09    7646165690040    (-123.116 49.26523) Commercial             C-3A     
+1000 09    4710083080027   (-123.1581 49.24924) Comprehensive Develop~ CD-1 (78)
+1001 09    1686022410000   (-123.2111 49.26047) One-Family Dwelling    RS-1     
+1002 09    16190724080004   (-123.101 49.24319) Commercial             C-2      
+1003 09    3726040300000    (-123.184 49.24303) One-Family Dwelling    RS-5     
+1004 09    1686020120000    (-123.215 49.26003) One-Family Dwelling    RS-1     
+1005 09    5731073220000   (-123.1648 49.24107) One-Family Dwelling    RS-5     
+1006 09    14580267380001  (-123.0574 49.28453) Multi-Family Dwelling  RM-3A    
+1007 09    14606250370000   (-123.0687 49.2742) Two-Family Dwelling    RT-5     
+1008 09    29138608980046  (-123.1235 49.27599) Comprehensive Develop~ DD       
+1009 09    23319725120044  (-123.0246 49.23348) Comprehensive Develop~ CD-1 (54~
+1010 09    2686095270002     (-123.15 49.25938) Two-Family Dwelling    RT-8     
+1011 09    26600115960033   (-123.129 49.28901) Comprehensive Develop~ DD       
+1012 09    30138616070035  (-123.1274 49.27367) Comprehensive Develop~ CD-1 (36~
+1013 09    23718316960012  (-123.0255 49.23485) Comprehensive Develop~ CD-1 (31~
+1014 09    26600115970067  (-123.1283 49.28946) Comprehensive Develop~ CD-1 (22~
+1015 09    7646165620020   (-123.1169 49.26486) Commercial             C-3A     
+1016 09    27600110940116  (-123.1331 49.29171) Multi-Family Dwelling  RM-6     
+1017 09    26590124460014  (-123.1156 49.28631) Comprehensive Develop~ CD-1 (44~
+1018 09    22698282670000  (-123.0398 49.25172) One-Family Dwelling    RS-1     
+1019 09    4726054520000   (-123.1743 49.24299) One-Family Dwelling    RS-5     
+1020 09    2631097080007   (-123.1477 49.27113) Comprehensive Develop~ CD-1 (30~
+1021 09    29138614930164  (-123.1271 49.27435) Comprehensive Develop~ DD       
+1022 09    13654171080018  (-123.1126 49.26196) Multi-Family Dwelling  RM-4     
+1023 09    29614120020103  (-123.1306 49.27749) Comprehensive Develop~ DD       
+1024 09    30618129380147  (-123.1314 49.27335) Comprehensive Develop~ CD-1 (36~
+1025 09    4715081860000   (-123.1589 49.24845) One-Family Dwelling    RS-1     
+1026 09    26600117080025  (-123.1268 49.28794) Comprehensive Develop~ CD-1 (34~
+1027 09    2640073540005   (-123.1634 49.26804) Multi-Family Dwelling  RM-4     
+1028 09    7646122720058   (-123.1421 49.26515) Commercial             C-3A     
+1029 09    4709083700000   (-123.1581 49.25108) One-Family Dwelling    RS-1     
+1030 09    26592116040121  (-123.1267 49.28907) Comprehensive Develop~ DD       
+1031 09    10120792680000  (-123.1476 49.22529) One-Family Dwelling    RS-6     
+1032 09    12145833920007  (-123.1333 49.20445) Industrial             MC-1     
+1033 09    29157615050244  (-123.1261 49.27387) Comprehensive Develop~ CD-1 (18~
+1034 09    20598277180000  (-123.0462 49.27721) One-Family Dwelling    RS-1     
+1035 09    26126595950047  (-123.1189 49.28365) Comprehensive Develop~ CD-1 (41~
+1036 09    22708279670000  (-123.0426 49.24565) One-Family Dwelling    RS-1     
+1037 09    7643120960039   (-123.1441 49.26585) Commercial             C-3A     
+1038 09    7686124020001   (-123.1405 49.25866) Multi-Family Dwelling  RM-3     
+1039 09    14665253980011  (-123.0646 49.26016) Multi-Family Dwelling  RM-4     
+1040 09    7683120960026   (-123.1442 49.25965) Multi-Family Dwelling  RM-3     
+1041 09    12170825960066  (-123.1164 49.21097) Comprehensive Develop~ CD-1 (53~
+1042 09    26172595030306  (-123.1085 49.27939) Comprehensive Develop~ CD-1 (26~
+1043 09    13648212040003  (-123.0867 49.26315) Multi-Family Dwelling  RM-4     
+1044 09    13182638950093  (-123.1068 49.26951) Comprehensive Develop~ CD-1 (53~
+1045 09    23273733590000  (-123.0558 49.23789) Multi-Family Dwelling  RM-7     
+1046 09    17815230870000  (-123.0745 49.21571) One-Family Dwelling    RS-1     
+1047 09    27615116570038  (-123.1377 49.28208) Multi-Family Dwelling  RM-5A    
+1048 09    13645194950007  (-123.0973 49.26569) Multi-Family Dwelling  RM-4     
+1049 09    7683122980023   (-123.1417 49.25961) Multi-Family Dwelling  RM-3     
+1050 09    23316718080144  (-123.0262 49.23514) Comprehensive Develop~ CD-1 (31~
+1051 09    7654124150035   (-123.1397 49.26293) Multi-Family Dwelling  RM-3     
+1052 09    2664095360004    (-123.1499 49.2618) Two-Family Dwelling    RT-8     
+1053 09    2686095170002    (-123.1503 49.2592) Two-Family Dwelling    RT-8     
+1054 09    15184703700000  (-123.1046 49.25022) One-Family Dwelling    RS-7     
+1055 09    13654184550013   (-123.104 49.26234) Multi-Family Dwelling  RM-4     
+1056 09    30161606550147  (-123.1166 49.27363) Comprehensive Develop~ CD-1 (32~
+1057 09    7169632590109   (-123.1161 49.26957) Comprehensive Develop~ FCCDD    
+1058 09    30162604050396  (-123.1156 49.27531) Comprehensive Develop~ CD-1 (32~
+1059 09    30616138940232  (-123.1266 49.27268) Comprehensive Develop~ CD-1 (36~
+1060 09    27607117180017  (-123.1327 49.28377) Multi-Family Dwelling  RM-5B    
+1061 09    27601116940031  (-123.1282 49.28787) Comprehensive Develop~ CD-1 (20~
+1062 09    16210729060031    (-123.09 49.24063) Commercial             C-2      
+1063 09    26595172970143  (-123.1048 49.27918) Comprehensive Develop~ CD-1 (26~
+1064 09    28600113370012  (-123.1316 49.29175) Comprehensive Develop~ CD-1 (32~
+1065 09    19227734530000  (-123.0794 49.23776) One-Family Dwelling    RS-1     
+1066 09    13600212790001  (-123.0855 49.27659) Two-Family Dwelling    RT-3     
+1067 09    23304716740060  (-123.0328 49.23952) Comprehensive Develop~ CD-1 (22~
+1068 09    7643134380008   (-123.1351 49.26588) Multi-Family Dwelling  FM-1     
+1069 09    7664120060008   (-123.1456 49.26155) Multi-Family Dwelling  RM-3     
+1070 09    11813150930044  (-123.1282 49.21794) Comprehensive Develop~ CD-1 (35~
+1071 09    13664191070001  (-123.1002 49.26132) Commercial             C-3A     
+1072 09    16713191360000  (-123.1002 49.24733) One-Family Dwelling    RS-7     
+1073 09    30157608950017  (-123.1106 49.27585) Comprehensive Develop~ CD-1 (34~
+1074 09    21612296130000   (-123.0361 49.2716) One-Family Dwelling    RS-1     
+1075 09    13687170560004   (-123.114 49.25753) Two-Family Dwelling    RT-6     
+1076 09    27600109480008  (-123.1347 49.29277) Multi-Family Dwelling  RM-6     
+1077 09    27607110940031   (-123.1391 49.2878) Multi-Family Dwelling  RM-5A    
+1078 09    2646095060007   (-123.1501 49.26526) Multi-Family Dwelling  RM-4     
+1079 09    9170721950000   (-123.1189 49.24236) One-Family Dwelling    RS-1     
+1080 09    29138602080085  (-123.1179 49.27974) Comprehensive Develop~ CD-1 (41~
+1081 09    15210696060011  (-123.0895 49.25249) Comprehensive Develop~ CD-1 (29~
+1082 09    16210735460000  (-123.0901 49.23753) Two-Family Dwelling    RT-2     
+1083 09    29124606980079  (-123.1254 49.28013) Comprehensive Develop~ DD       
+1084 09    12835138640001  (-123.1356 49.20408) Commercial             C-2      
+1085 09    29138606040172  (-123.1211 49.27759) Comprehensive Develop~ DD       
+1086 09    27603109740065  (-123.1374 49.29099) Multi-Family Dwelling  RM-5B    
+1087 09    30138616070159  (-123.1274 49.27367) Comprehensive Develop~ CD-1 (36~
+1088 09    1640035070045   (-123.1899 49.26895) Multi-Family Dwelling  RM-3A    
+1089 09    29156604670006  (-123.1189 49.27684) Comprehensive Develop~ DD       
+1090 09    30159607880086  (-123.1182 49.27392) Comprehensive Develop~ CD-1 (32~
+1091 09    23284770360000  (-123.0455 49.23523) One-Family Dwelling    RS-1     
+1092 09    29157615050329  (-123.1261 49.27387) Comprehensive Develop~ CD-1 (18~
+1093 09    19224750310000  (-123.0816 49.23199) One-Family Dwelling    RS-1     
+1094 09    16212765270000  (-123.0884 49.22674) One-Family Dwelling    RS-1     
+1095 09    13664195950062  (-123.0967 49.26134) Commercial             C-3A     
+1096 09    30605186080041  (-123.1011 49.27465) Comprehensive Develop~ CD-1 (26~
+1097 09    23296718130000    (-123.0393 49.241) One-Family Dwelling    RS-1     
+1098 09    12125832240030  (-123.1418 49.20648) Multi-Family Dwelling  RM-4     
+1099 09    3710032550000   (-123.1921 49.25042) One-Family Dwelling    RS-5     
+1100 09    13645206030001  (-123.0905 49.26548) Multi-Family Dwelling  RM-4     
+1101 09    16765197550000  (-123.0956 49.22771) One-Family Dwelling    RS-1     
+1102 09    11175790550037    (-123.114 49.2246) Comprehensive Develop~ CD-1 (10~
+1103 09    12170825880187  (-123.1162 49.21184) Comprehensive Develop~ CD-1 (53~
+1104 09    19235726410000    (-123.074 49.2424) One-Family Dwelling    RS-1     
+1105 09    26597118380018  (-123.1239 49.28729) Comprehensive Develop~ DD       
+1106 09    13645179560018   (-123.108 49.26538) Light Industrial       I-1      
+1107 09    2648050650001    (-123.1768 49.2653) Two-Family Dwelling    RT-7     
+1108 09    29156604070184  (-123.1185 49.27757) Comprehensive Develop~ DD       
+1109 09    2636090950047   (-123.1511 49.27011) Multi-Family Dwelling  RM-4     
+1110 09    9165734330000   (-123.1192 49.23912) One-Family Dwelling    RS-1     
+1111 09    17226810540000  (-123.0797 49.21704) One-Family Dwelling    RS-1     
+1112 09    29157615050205  (-123.1261 49.27387) Comprehensive Develop~ CD-1 (18~
+1113 09    7688138970172   (-123.1324 49.25814) Multi-Family Dwelling  RM-3     
+1114 09    9703150070028    (-123.127 49.25198) Commercial             C-2      
+1115 09    7688153240002   (-123.1238 49.25767) Multi-Family Dwelling  RM-4     
+1116 09    2638077180011   (-123.1618 49.26889) Multi-Family Dwelling  RM-4     
+1117 09    2664087180008   (-123.1544 49.26171) Comprehensive Develop~ CD-1 (35~
+1118 09    20280588050007  (-123.0446 49.28178) Commercial             C-2C1    
+1119 09    13645194950018  (-123.0973 49.26569) Multi-Family Dwelling  RM-4     
+1120 09    30617121240245  (-123.1342 49.27562) Comprehensive Develop~ CD-1 (19~
+1121 09    29131614930158   (-123.128 49.27558) Comprehensive Develop~ CD-1 (48~
+1122 09    29138614930275  (-123.1271 49.27435) Comprehensive Develop~ DD       
+1123 09    26600115960022   (-123.129 49.28901) Comprehensive Develop~ DD       
+1124 09    27603107970005  (-123.1394 49.29299) Multi-Family Dwelling  RM-5B    
+1125 09    14575265450012  (-123.0592 49.28778) Multi-Family Dwelling  RM-3A    
+1126 09    12822165420000   (-123.119 49.21299) One-Family Dwelling    RS-1     
+1127 09    7690150870018   (-123.1251 49.25735) Multi-Family Dwelling  RM-4     
+1128 09    26589157560116  (-123.1053 49.28255) Historical Area        HA-2     
+1129 09    16710203260000  (-123.0919 49.24833) One-Family Dwelling    RS-1     
+1130 09    26592116040104  (-123.1267 49.28907) Comprehensive Develop~ DD       
+1131 09    10150795550000  (-123.1289 49.22327) One-Family Dwelling    RS-1     
+1132 09    17793184150000  (-123.1057 49.22412) One-Family Dwelling    RS-1     
+1133 09    2670084470025   (-123.1566 49.26135) Comprehensive Develop~ CD-1 (34~
+1134 09    21650270970029  (-123.0548 49.26274) Comprehensive Develop~ CD-1 (30~
+1135 09    26597117280047  (-123.1254 49.28822) Comprehensive Develop~ CD-1 (25~
+1136 09    4078721200000   (-123.1606 49.24444) One-Family Dwelling    RS-1     
+1137 09    30618129450056  (-123.1292 49.27358) Comprehensive Develop~ CD-1 (36~
+1138 09    14611253750000   (-123.064 49.27234) Two-Family Dwelling    RT-5     
+1139 09    21650296650000   (-123.035 49.26223) One-Family Dwelling    RS-1     
+1140 09    29131614930186   (-123.128 49.27558) Comprehensive Develop~ CD-1 (48~
+1141 09    26130595020276  (-123.1165 49.28321) Comprehensive Develop~ CD-1 (41~
+1142 09    6075790640000   (-123.1631 49.22648) One-Family Dwelling    RS-5     
+1143 09    21641271440000  (-123.0535 49.26451) One-Family Dwelling    RS-1     
+1144 09    1688020300000   (-123.2142 49.25909) One-Family Dwelling    RS-1     
+1145 09    7664124160004   (-123.1405 49.26164) Multi-Family Dwelling  RM-3     
+1146 09    16196710700000  (-123.0971 49.24649) One-Family Dwelling    RS-1     
+1147 09    10122750650000  (-123.1452 49.23315) One-Family Dwelling    RS-3     
+1148 09    10755097460000  (-123.1488 49.23229) One-Family Dwelling    RS-3     
+1149 09    22304706380000   (-123.0282 49.2459) One-Family Dwelling    RS-1     
+1150 09    14255596950000   (-123.064 49.27765) Two-Family Dwelling    RT-5     
+1151 09    13645197060003  (-123.0954 49.26482) Multi-Family Dwelling  RM-4     
+1152 09    25266810780000  (-123.0573 49.21853) One-Family Dwelling    RS-1     
+1153 09    28589117530028  (-123.1224 49.28979) Comprehensive Develop~ CD-1 (36~
+1154 09    23720314960145  (-123.0287 49.23538) Comprehensive Develop~ CD-1 (31~
+1155 09    13648171720051  (-123.1117 49.26364) Light Industrial       I-1      
+1156 09    11790170040044  (-123.1156 49.22572) Comprehensive Develop~ CD-1 (10~
+1157 09    13589196130000   (-123.093 49.28241) Comprehensive Develop~ DEOD     
+1158 09    3742040610000   (-123.1834 49.23796) One-Family Dwelling    RS-5     
+1159 09    2664087180056   (-123.1544 49.26171) Comprehensive Develop~ CD-1 (35~
+1160 09    30162604050366  (-123.1156 49.27531) Comprehensive Develop~ CD-1 (32~
+1161 09    29160604910102   (-123.117 49.27595) Comprehensive Develop~ DD       
+1162 09    18837277830016   (-123.048 49.20654) Comprehensive Develop~ CD-1 (24~
+1163 09    13190601020010  (-123.0992 49.27641) Commercial             FC-1     
+1164 09    27605119840222  (-123.1258 49.28232) Comprehensive Develop~ CD-1 (44~
+1165 09    26120604040059  (-123.1245 49.28096) Comprehensive Develop~ CD-1 (32~
+1166 09    29148602250187  (-123.1176 49.27932) Comprehensive Develop~ DD       
+1167 09    23294726410000  (-123.0434 49.23744) One-Family Dwelling    RS-1     
+1168 09    26579186420012   (-123.101 49.28379) Historical Area        HA-2     
+1169 09    3698040260000    (-123.184 49.25349) One-Family Dwelling    RS-5     
+1170 09    29138612050098  (-123.1249 49.27579) Comprehensive Develop~ DD       
+1171 09    12830124960011  (-123.1427 49.20823) Multi-Family Dwelling  RM-4     
+1172 09    30161612980083   (-123.1207 49.2723) Comprehensive Develop~ CD-1 (29~
+1173 09    3706040950000   (-123.1821 49.25219) One-Family Dwelling    RS-5     
+1174 09    29157604960190  (-123.1173 49.27625) Comprehensive Develop~ DD       
+1175 09    5739081450000   (-123.1571 49.23859) One-Family Dwelling    RS-5     
+1176 09    22693271700000  (-123.0551 49.25296) One-Family Dwelling    RS-1     
+1177 09    26600115960181   (-123.129 49.28901) Comprehensive Develop~ DD       
+1178 09    23710279500023  (-123.0441 49.24404) Comprehensive Develop~ CD-1 (21~
+1179 09    15708203370000  (-123.0911 49.24947) One-Family Dwelling    RS-1     
+1180 09    25828251070000   (-123.064 49.21016) One-Family Dwelling    RS-1     
+1181 09    4093722350180   (-123.1506 49.24351) One-Family Dwelling    RS-1     
+1182 09    26130595020248  (-123.1165 49.28321) Comprehensive Develop~ CD-1 (41~
+1183 09    8150697850006    (-123.1279 49.2531) Multi-Family Dwelling  RM-3A    
+1184 09    30612157030168  (-123.1195 49.27328) Comprehensive Develop~ CD-1 (32~
+1185 09    9702182400000   (-123.1063 49.25163) One-Family Dwelling    RS-1     
+1186 09    27605117850005  (-123.1292 49.28506) Multi-Family Dwelling  RM-5B    
+1187 09    2664087570073   (-123.1542 49.26223) Comprehensive Develop~ CD-1 (38~
+1188 09    29157604960037  (-123.1173 49.27625) Comprehensive Develop~ DD       
+1189 09    10813120660000  (-123.1453 49.21745) One-Family Dwelling    RS-1     
+1190 09    27601116940082  (-123.1282 49.28787) Comprehensive Develop~ CD-1 (20~
+1191 09    30161612980041   (-123.1207 49.2723) Comprehensive Develop~ CD-1 (29~
+1192 09    14265633150001  (-123.0601 49.26752) Two-Family Dwelling    RT-5     
+1193 09    30157614070113   (-123.1249 49.2736) Comprehensive Develop~ CD-1 (26~
+1194 09    19730233620000   (-123.0727 49.2399) One-Family Dwelling    RS-1     
+1195 09    7690134590040   (-123.1351 49.25818) Multi-Family Dwelling  RM-3     
+1196 09    26161599940162   (-123.1124 49.2789) Comprehensive Develop~ DD       
+1197 09    26172595060120  (-123.1053 49.27943) Comprehensive Develop~ CD-1 (37~
+1198 09    30618138350007   (-123.128 49.27283) Comprehensive Develop~ CD-1 (36~
+1199 09    16730192280000  (-123.0993 49.24022) One-Family Dwelling    RS-1     
+1200 09    3040707760000   (-123.1848 49.25041) One-Family Dwelling    RS-5     
+1201 09    27601108930020  (-123.1364 49.29382) Multi-Family Dwelling  RM-6     
+1202 09    30618138720005  (-123.1271 49.27159) Comprehensive Develop~ CD-1 (36~
+1203 09    26116573940250   (-123.1253 49.2893) Comprehensive Develop~ CD-1 (25~
+1204 09    27607116050040  (-123.1333 49.28489) Multi-Family Dwelling  RM-5     
+1205 09    19734233630000   (-123.0722 49.2387) One-Family Dwelling    RS-1     
+1206 09    27607115470027  (-123.1346 49.28574) Multi-Family Dwelling  RM-5     
+1207 09    22686305560000  (-123.0292 49.25629) One-Family Dwelling    RS-1     
+1208 09    29138608980044  (-123.1235 49.27599) Comprehensive Develop~ DD       
+1209 09    7688130040001   (-123.1384 49.25754) Comprehensive Develop~ CD-1 (16~
+1210 09    3739040320000   (-123.1844 49.23832) One-Family Dwelling    RS-5     
+1211 09    29134612550170  (-123.1265 49.27604) Comprehensive Develop~ DD       
+1212 09    5078750090030   (-123.1618 49.23439) Commercial             C-2      
+1213 09    5750050950000    (-123.177 49.23498) One-Family Dwelling    RS-5     
+1214 09    11150793700000   (-123.128 49.22422) One-Family Dwelling    RS-1     
+1215 09    29138612930117  (-123.1256 49.27531) Comprehensive Develop~ DD       
+1216 09    18828305620048  (-123.0353 49.20735) Comprehensive Develop~ CD-1 (13~
+1217 09    30617121240033   (-123.1346 49.2766) One-Family Dwelling    RS-1     
+1218 09    23718314940042  (-123.0272 49.23558) Comprehensive Develop~ CD-1 (31~
+1219 09    7130686960005   (-123.1383 49.25811) Commercial             C-3A     
+1220 09    7654165040041   (-123.1174 49.26128) Comprehensive Develop~ CD-1 (18~
+1221 09    14577267040005  (-123.0575 49.28544) Multi-Family Dwelling  RM-3A    
+1222 09    13638172040027  (-123.1115 49.26912) Comprehensive Develop~ CD-1 (48~
+1223 09    13650184980023   (-123.1034 49.2627) Commercial             C-3A     
+1224 09    2636058630002   (-123.1721 49.27046) Two-Family Dwelling    RT-8     
+1225 09    19235723250000  (-123.0739 49.24339) One-Family Dwelling    RS-1     
+1226 09    2640058320023   (-123.1725 49.26834) Multi-Family Dwelling  RM-4     
+1227 09    4692084070000   (-123.1577 49.25657) One-Family Dwelling    RS-1     
+1228 09    19712225800000  (-123.0771 49.24718) Two-Family Dwelling    RT-10    
+1229 09    15689203420026    (-123.091 49.2562) Commercial             C-2      
+1230 09    12827156460002  (-123.1232 49.21018) Two-Family Dwelling    RT-2     
+1231 09    5737092860000   (-123.1492 49.23883) One-Family Dwelling    RS-5     
+1232 09    9750161050000   (-123.1221 49.23405) One-Family Dwelling    RS-1     
+1233 09    1024630940000   (-123.2084 49.27382) One-Family Dwelling    RS-1     
+1234 09    23718314940032  (-123.0272 49.23558) Comprehensive Develop~ CD-1 (31~
+1235 09    12152830940007  (-123.1273 49.20723) Multi-Family Dwelling  RM-3A    
+1236 09    30605186080125  (-123.1011 49.27465) Comprehensive Develop~ CD-1 (26~
+1237 09    29138604990128   (-123.121 49.27818) Comprehensive Develop~ DD       
+1238 09    30162604050520  (-123.1156 49.27531) Comprehensive Develop~ CD-1 (32~
+1239 09    7163670030039    (-123.121 49.26007) Comprehensive Develop~ CD-1 (59)
+1240 09    4090722020057   (-123.1517 49.24445) One-Family Dwelling    RS-1     
+1241 09    30612157030331  (-123.1196 49.27382) Comprehensive Develop~ CD-1 (32~
+1242 09    2642097380001   (-123.1471 49.26709) Multi-Family Dwelling  RM-4     
+1243 09    15689203420008    (-123.091 49.2562) Commercial             C-2      
+1244 09    23303712960000   (-123.031 49.24293) One-Family Dwelling    RS-1     
+1245 09    23300770040009  (-123.0421 49.23567) Commercial             C-2      
+1246 09    12130833510009  (-123.1411 49.20564) Multi-Family Dwelling  RM-3A    
+1247 09    29138608980192  (-123.1235 49.27599) Comprehensive Develop~ DD       
+1248 09    16211744860000  (-123.0889 49.23336) One-Family Dwelling    RS-1     
+1249 09    29126608950022   (-123.127 49.27832) Comprehensive Develop~ DD       
+1250 09    14568267060017  (-123.0572 49.28906) Multi-Family Dwelling  RM-3A    
+1251 09    1630020340000   (-123.2135 49.27504) One-Family Dwelling    RS-1     
+1252 09    7646153060005   (-123.1235 49.26485) Multi-Family Dwelling  FM-1     
+1253 09    16210758640009  (-123.0903 49.22853) Commercial             C-2      
+1254 09    3042691700000   (-123.1814 49.25697) One-Family Dwelling    RS-1     
+1255 09    9150690980003    (-123.1268 49.2565) Multi-Family Dwelling  RM-3A    
+1256 09    23283726220000  (-123.0446 49.23837) Two-Family Dwelling    RT-11    
+1257 09    30161606550303  (-123.1172 49.27348) Comprehensive Develop~ CD-1 (32~
+1258 09    27605114060030  (-123.1343 49.28751) Multi-Family Dwelling  RM-5     
+1259 09    30138616060026  (-123.1278 49.27367) Comprehensive Develop~ CD-1 (36~
+1260 09    8705130770000    (-123.137 49.25089) Other                  FSHCA    
+1261 09    1678028860000   (-123.1974 49.26155) One-Family Dwelling    RS-1     
+1262 09    2642084890009   (-123.1559 49.26758) Multi-Family Dwelling  RM-4     
+1263 09    14590233140042  (-123.0715 49.28117) Industrial             MC-1     
+1264 09    27601109050024  (-123.1353 49.29315) Multi-Family Dwelling  RM-6     
+1265 09    13646190910218  (-123.0996 49.26539) Light Industrial       IC-3     
+1266 09    3040747370020   (-123.1857 49.23536) Commercial             C-2      
+1267 09    2686045950000   (-123.1782 49.25998) One-Family Dwelling    RS-5     
+1268 09    13638186080164  (-123.1023 49.27003) Comprehensive Develop~ CD-1 (52~
+1269 09    13173684150001  (-123.1114 49.25842) Two-Family Dwelling    RT-6     
+1270 09    23721303360000  (-123.0351 49.23769) One-Family Dwelling    RS-1     
+1271 09    18285830060040  (-123.0478 49.20753) Comprehensive Develop~ CD-1 (24~
+1272 09    20575277290000  (-123.0458 49.28798) One-Family Dwelling    RS-1     
+1273 09    7688150690012   (-123.1255 49.25803) Multi-Family Dwelling  RM-4     
+1274 09    30617121240174  (-123.1342 49.27562) Comprehensive Develop~ CD-1 (19~
+1275 09    13665212420000  (-123.0862 49.26033) Two-Family Dwelling    RT-5     
+1276 09    13650184980039   (-123.1034 49.2627) Commercial             C-3A     
+1277 09    2646097560037   (-123.1468 49.26521) Multi-Family Dwelling  RM-4     
+1278 09    14655230420000  (-123.0757 49.26115) Two-Family Dwelling    RT-5     
+1279 09    9741182330000   (-123.1071 49.23673) One-Family Dwelling    RS-1     
+1280 09    2640073090037    (-123.1637 49.2684) Multi-Family Dwelling  RM-4     
+1281 09    16758197570000   (-123.0954 49.2295) One-Family Dwelling    RS-1     
+1282 09    29138614930201  (-123.1271 49.27435) Comprehensive Develop~ DD       
+1283 09    22702304860000  (-123.0266 49.24852) One-Family Dwelling    RS-1     
+1284 09    2646070340000   (-123.1676 49.26553) Two-Family Dwelling    RT-8     
+1285 09    23720314960025  (-123.0287 49.23538) Comprehensive Develop~ CD-1 (31~
+1286 09    2648041190001   (-123.1833 49.26542) Two-Family Dwelling    RT-7     
+1287 09    11752179300000    (-123.11 49.23204) One-Family Dwelling    RS-1     
+1288 09    15692197140000  (-123.0963 49.25445) One-Family Dwelling    RS-1     
+1289 09    2650045960035   (-123.1783 49.26397) Commercial             C-2C1    
+1290 09    21607275780000  (-123.0475 49.27295) One-Family Dwelling    RS-1     
+1291 09    26600118740059   (-123.124 49.28616) Comprehensive Develop~ CD-1 (42~
+1292 09    15696197410000  (-123.0952 49.25315) One-Family Dwelling    RS-1     
+1293 09    6830083570000    (-123.156 49.21736) One-Family Dwelling    RS-1     
+1294 09    27602109500044  (-123.1366 49.29178) Multi-Family Dwelling  RM-5B    
+1295 09    24313754600000  (-123.0302 49.22991) One-Family Dwelling    RS-1     
+1296 09    29157615050122  (-123.1254 49.27395) Comprehensive Develop~ CD-1 (18~
+1297 09    16713191250000  (-123.1003 49.24781) One-Family Dwelling    RS-7     
+1298 09    2642084410035   (-123.1569 49.26759) Multi-Family Dwelling  RM-4     
+1299 09    7654120060017   (-123.1455 49.26247) Multi-Family Dwelling  RM-3     
+1300 09    7686146090045   (-123.1308 49.25903) Multi-Family Dwelling  RM-3     
+1301 09    19231744870000   (-123.076 49.23319) One-Family Dwelling    RS-1     
+1302 09    16219719110000  (-123.0831 49.24438) One-Family Dwelling    RS-1     
+1303 09    3701042170000   (-123.1814 49.25309) One-Family Dwelling    RS-5     
+1304 09    7643124870059   (-123.1396 49.26653) Commercial             C-3A     
+1305 09    4090722020006   (-123.1517 49.24445) One-Family Dwelling    RS-1     
+1306 09    22706280410000  (-123.0406 49.24647) One-Family Dwelling    RS-1     
+1307 09    13646212970011  (-123.0855 49.26458) Multi-Family Dwelling  RM-4     
+1308 09    30614157940027  (-123.1221 49.27177) Comprehensive Develop~ CD-1 (29~
+1309 09    7654165040136   (-123.1175 49.26062) Comprehensive Develop~ CD-1 (18~
+1310 09    7688150360005   (-123.1266 49.25772) Multi-Family Dwelling  RM-4     
+1311 09    10813135770000  (-123.1357 49.21759) One-Family Dwelling    RS-1     
+1312 09    26597118030111   (-123.1239 49.2878) Comprehensive Develop~ DD       
+1313 09    23723276120000  (-123.0494 49.24144) Multi-Family Dwelling  RM-7     
+1314 09    19236721370000  (-123.0725 49.24381) One-Family Dwelling    RS-1     
+1315 09    1683028130000    (-123.1996 49.2612) One-Family Dwelling    RS-1     
+1316 09    2627096970000   (-123.1479 49.27471) Two-Family Dwelling    RT-9     
+1317 09    7149648930015   (-123.1294 49.26374) Commercial             C-3A     
+1318 09    14255566580027  (-123.0581 49.28972) Multi-Family Dwelling  RM-3A    
+1319 09    1630022340000   (-123.2105 49.27421) One-Family Dwelling    RS-1     
+1320 09    3714042680000     (-123.18 49.24776) One-Family Dwelling    RS-5     
+1321 09    10145750840000   (-123.133 49.23258) One-Family Dwelling    RS-1     
+1322 09    26579178210004  (-123.1028 49.28376) Historical Area        HA-2     
+1323 09    2087664970027   (-123.1555 49.26123) Comprehensive Develop~ CD-1 (34~
+1324 09    30138616060183  (-123.1278 49.27367) Comprehensive Develop~ CD-1 (36~
+1325 09    13190601020042  (-123.0992 49.27641) Commercial             FC-1     
+1326 09    17823195140000  (-123.0999 49.21234) One-Family Dwelling    RS-1     
+1327 09    21655277240000  (-123.0465 49.26064) One-Family Dwelling    RS-1     
+1328 09    16761188740000  (-123.1015 49.22839) Two-Family Dwelling    RT-2     
+1329 09    29134602080058  (-123.1201 49.28005) Comprehensive Develop~ DD       
+1330 09    29156604070169  (-123.1185 49.27757) Comprehensive Develop~ DD       
+1331 09    4698061200000   (-123.1722 49.25345) One-Family Dwelling    RS-1     
+1332 09    28117589050066  (-123.1239 49.29059) Comprehensive Develop~ CD-1 (36~
+1333 09    13638171080015  (-123.1133 49.26824) Comprehensive Develop~ CD-1 (46~
+1334 09    13648206650013   (-123.0897 49.2637) Multi-Family Dwelling  RM-4     
+1335 09    27616119950030  (-123.1324 49.27738) Comprehensive Develop~ CD-1 (16~
+1336 09    13650217930026  (-123.0818 49.26271) Multi-Family Dwelling  RM-4N    
+1337 09    13643206940030  (-123.0897 49.26588) Multi-Family Dwelling  RM-4     
+1338 09    16184765540000  (-123.1056 49.22714) One-Family Dwelling    RS-1     
+1339 09    15692217260000  (-123.0829 49.25426) Multi-Family Dwelling  RM-1     
+1340 09    10145793340000   (-123.133 49.22476) One-Family Dwelling    RS-1     
+1341 09    29156604670159  (-123.1189 49.27686) Comprehensive Develop~ DD       
+1342 09    26600115960178   (-123.129 49.28901) Comprehensive Develop~ DD       
+1343 09    29138612080067  (-123.1248 49.27538) Comprehensive Develop~ DD       
+1344 09    2642097380062   (-123.1473 49.26709) Multi-Family Dwelling  RM-4     
+1345 09    20305590050006  (-123.0291 49.28085) Commercial             C-2C1    
+1346 09    15694203060000  (-123.0917 49.25348) One-Family Dwelling    RS-1     
+1347 09    29138606940009   (-123.1218 49.2774) Comprehensive Develop~ DD       
+1348 09    12823145430000  (-123.1322 49.21325) One-Family Dwelling    RS-1     
+1349 09    26600118740016   (-123.124 49.28616) Comprehensive Develop~ CD-1 (42~
+1350 09    18828305620060    (-123.034 49.2075) Comprehensive Develop~ CD-1 (13~
+1351 09    5752054130000   (-123.1754 49.23404) One-Family Dwelling    RS-5     
+1352 09    23316714020000  (-123.0247 49.23949) Two-Family Dwelling    RT-4A    
+1353 09    26600115960017   (-123.129 49.28901) Comprehensive Develop~ DD       
+1354 09    23284726160000  (-123.0435 49.23802) One-Family Dwelling    RS-1     
+1355 09    7688130040055   (-123.1384 49.25754) Comprehensive Develop~ CD-1 (16~
+1356 09    7654120980002    (-123.144 49.26246) Multi-Family Dwelling  RM-3     
+1357 09    14650255580002  (-123.0629 49.26196) Two-Family Dwelling    RT-5N    
+1358 09    19224755860000  (-123.0809 49.22927) One-Family Dwelling    RS-1     
+1359 09    16210719020139  (-123.0895 49.24429) Commercial             C-2      
+1360 09    2646041140000   (-123.1831 49.26578) Two-Family Dwelling    RT-7     
+1361 09    30618138950065  (-123.1268 49.27207) Comprehensive Develop~ CD-1 (36~
+1362 09    27609114020026  (-123.1373 49.28532) Multi-Family Dwelling  RM-5A    
+1363 09    1674034380000   (-123.1895 49.26234) One-Family Dwelling    RS-1     
+1364 09    15697243850049  (-123.0676 49.25233) Industrial             MC-1     
+1365 09    2087664970014   (-123.1555 49.26123) Comprehensive Develop~ CD-1 (34~
+1366 09    13650214950032  (-123.0836 49.26253) Multi-Family Dwelling  RM-4N    
+1367 09    29138614930252  (-123.1271 49.27435) Comprehensive Develop~ DD       
+1368 09    22700304020000  (-123.0283 49.25031) One-Family Dwelling    RS-1     
+1369 09    29134608970002   (-123.125 49.27705) Comprehensive Develop~ DD       
+1370 09    26160595920004   (-123.1116 49.2788) Comprehensive Develop~ CD-1 (41~
+1371 09    30612157030113  (-123.1195 49.27328) Comprehensive Develop~ CD-1 (32~
+1372 09    29138604440109  (-123.1199 49.27836) Comprehensive Develop~ DD       
+1373 09    2664087570023   (-123.1542 49.26223) Comprehensive Develop~ CD-1 (38~
+1374 09    18830272880015  (-123.0539 49.20624) Comprehensive Develop~ CD-1 (23~
+1375 09    7640146940032   (-123.1297 49.26579) Multi-Family Dwelling  FM-1     
+1376 09    16192722390000  (-123.1004 49.24398) One-Family Dwelling    RS-1     
+1377 09    30161606550048  (-123.1166 49.27363) Comprehensive Develop~ CD-1 (32~
+1378 09    29134608970097   (-123.125 49.27705) Comprehensive Develop~ DD       
+1379 09    2686041290000   (-123.1833 49.26005) One-Family Dwelling    RS-5     
+1380 09    10124765060000    (-123.143 49.2286) One-Family Dwelling    RS-3     
+1381 09    7686150960030   (-123.1245 49.25842) Multi-Family Dwelling  RM-4     
+1382 09    11758163250014  (-123.1206 49.23082) Comprehensive Develop~ CD-1 (71~
+1383 09    13638182500101  (-123.1058 49.27006) Comprehensive Develop~ CD-1 (46~
+1384 09    30161612980049   (-123.1207 49.2723) Comprehensive Develop~ CD-1 (29~
+1385 09    30616134520142  (-123.1286 49.27428) Comprehensive Develop~ CD-1 (36~
+1386 09    11790150640000   (-123.1273 49.2262) One-Family Dwelling    RS-1     
+1387 09    4710054260000   (-123.1749 49.24964) One-Family Dwelling    RS-5     
+1388 09    25261810510000  (-123.0598 49.21909) One-Family Dwelling    RS-1     
+1389 09    6085790020009    (-123.155 49.22639) Comprehensive Develop~ CD-1 (44~
+1390 09    30186603960002  (-123.1012 49.27523) Comprehensive Develop~ CD-1 (26~
+1391 09    15708203250000  (-123.0914 49.24948) One-Family Dwelling    RS-1     
+1392 09    13648212040016  (-123.0867 49.26315) Multi-Family Dwelling  RM-4     
+1393 09    24306770220023  (-123.0362 49.23348) Commercial             C-2      
+1394 09    2636087030006   (-123.1549 49.27017) Multi-Family Dwelling  RM-4     
+1395 09    14655250970014  (-123.0664 49.26152) Multi-Family Dwelling  RM-4     
+1396 09    7648159060012   (-123.1215 49.26397) Comprehensive Develop~ CD-1 (18~
+1397 09    23270710390000  (-123.0571 49.24421) Two-Family Dwelling    RT-11N   
+1398 09    10120750790000    (-123.1482 49.233) One-Family Dwelling    RS-3     
+1399 09    8695118940000   (-123.1468 49.25425) Other                  FSHCA    
+1400 09    30138616060178  (-123.1278 49.27367) Comprehensive Develop~ CD-1 (36~
+1401 09    17810212450000  (-123.0865 49.21845) One-Family Dwelling    RS-1     
+1402 09    29156604070212  (-123.1185 49.27757) Comprehensive Develop~ DD       
+1403 09    30157606020355  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+1404 09    23718314060158  (-123.0284 49.23614) Comprehensive Develop~ CD-1 (31~
+1405 09    13228684910000  (-123.0781 49.25683) Two-Family Dwelling    RT-5     
+1406 09    3707054680000   (-123.1738 49.25074) One-Family Dwelling    RS-5     
+1407 09    2050634540000   (-123.1774 49.27063) Two-Family Dwelling    RT-8     
+1408 09    29148606290071  (-123.1212 49.27698) Comprehensive Develop~ DD       
+1409 09    19730243050000  (-123.0676 49.24025) One-Family Dwelling    RS-1     
+1410 09    30612157030065  (-123.1195 49.27328) Comprehensive Develop~ CD-1 (32~
+1411 09    2095664930004   (-123.1511 49.26124) Commercial             C-7      
+1412 09    30157608950144  (-123.1217 49.27436) Comprehensive Develop~ CD-1 (26~
+1413 09    2058630480002   (-123.1736 49.27078) Two-Family Dwelling    RT-8     
+1414 09    3701032270000   (-123.1928 49.25314) One-Family Dwelling    RS-5     
+1415 09    29138606940081  (-123.1223 49.27707) Comprehensive Develop~ DD       
+1416 09    24304799220000  (-123.0387 49.22096) One-Family Dwelling    RS-1     
+1417 09    7683163970023   (-123.1181 49.25977) Multi-Family Dwelling  RM-4     
+1418 09    4701073870000   (-123.1622 49.25298) One-Family Dwelling    RS-1     
+1419 09    13650182980074  (-123.1056 49.26274) Commercial             C-3A     
+1420 09    26592117710005  (-123.1239 49.28885) Comprehensive Develop~ DD       
+1421 09    23284747210002   (-123.046 49.23325) Two-Family Dwelling    RT-11N   
+1422 09    23320714930023  (-123.0242 49.23809) Comprehensive Develop~ CD-1 (24~
+1423 09    29614120020037  (-123.1306 49.27749) Comprehensive Develop~ DD       
+1424 09    29134614980109  (-123.1276 49.27459) Comprehensive Develop~ CD-1 (48~
+1425 09    13226596260000   (-123.079 49.27831) Two-Family Dwelling    RT-3     
+1426 09    29157604960029  (-123.1173 49.27625) Comprehensive Develop~ DD       
+1427 09    29134606920044   (-123.123 49.27763) Comprehensive Develop~ DD       
+1428 09    29156604070569  (-123.1185 49.27785) Comprehensive Develop~ DD       
+1429 09    19244721530000  (-123.0684 49.24332) One-Family Dwelling    RS-1     
+1430 09    24753284160000  (-123.0454 49.23085) One-Family Dwelling    RS-1     
+1431 09    5750077080023    (-123.1623 49.2344) Commercial             C-2      
+1432 09    14575265450005  (-123.0592 49.28778) Multi-Family Dwelling  RM-3A    
+1433 09    17818201370000  (-123.0934 49.21442) One-Family Dwelling    RS-1     
+1434 09    20566312220000  (-123.0249 49.29137) One-Family Dwelling    RS-1     
+1435 09    13648171720057  (-123.1117 49.26364) Light Industrial       I-1      
+1436 09    11790170040035  (-123.1156 49.22572) Comprehensive Develop~ CD-1 (10~
+1437 09    29156604070049  (-123.1185 49.27757) Comprehensive Develop~ DD       
+1438 09    30157614070150   (-123.1249 49.2736) Comprehensive Develop~ CD-1 (26~
+1439 09    27616119960060  (-123.1338 49.27737) Multi-Family Dwelling  RM-5A    
+1440 09    26116573940012   (-123.1263 49.2895) Comprehensive Develop~ CD-1 (25~
+1441 09    24284790230000  (-123.0462 49.22406) One-Family Dwelling    RS-1     
+1442 09    10790124330000  (-123.1428 49.22729) One-Family Dwelling    RS-3     
+1443 09    30617121240127  (-123.1342 49.27623) One-Family Dwelling    RS-1     
+1444 09    2636072460001   (-123.1655 49.27001) Two-Family Dwelling    RT-8     
+1445 09    30162604050133  (-123.1156 49.27583) Comprehensive Develop~ CD-1 (32~
+1446 09    14648232040016  (-123.0751 49.26308) Multi-Family Dwelling  RM-4     
+1447 09    7643130960029    (-123.1367 49.2657) Commercial             C-3A     
+1448 09    7654138400013    (-123.133 49.26227) Multi-Family Dwelling  RM-3     
+1449 09    24306770220009  (-123.0362 49.23348) Commercial             C-2      
+1450 09    2636090950038   (-123.1511 49.27011) Multi-Family Dwelling  RM-4     
+1451 09    9750163050077   (-123.1204 49.23384) Comprehensive Develop~ CD-1 (57~
+1452 09    27605119480038  (-123.1266 49.28256) Multi-Family Dwelling  RM-5B    
+1453 09    13638171960019  (-123.1127 49.26855) Comprehensive Develop~ CD-1 (45~
+1454 09    25313823010018  (-123.0309 49.21265) Comprehensive Develop~ CD-1 (11~
+1455 09    29126612940005  (-123.1283 49.27676) Comprehensive Develop~ DD       
+1456 09    19759237530000  (-123.0707 49.22877) One-Family Dwelling    RS-1     
+1457 09    11179811930028  (-123.1112 49.21748) Comprehensive Develop~ CD-1 (34~
+1458 09    28583110020127  (-123.1326 49.29236) Comprehensive Develop~ CD-1 (32~
+1459 09    14650234090016  (-123.0734 49.26264) Multi-Family Dwelling  RM-4N    
+1460 09    7643124870087   (-123.1396 49.26653) Commercial             C-3A     
+1461 09    5078755050030    (-123.1618 49.2323) Multi-Family Dwelling  RM-3     
+1462 09    7646159930007   (-123.1203 49.26514) Multi-Family Dwelling  FM-1     
+1463 09    23718306040040   (-123.0318 49.2378) Comprehensive Develop~ CD-1 (35~
+1464 09    14577267040029  (-123.0575 49.28544) Multi-Family Dwelling  RM-3A    
+1465 09    13650182980044  (-123.1056 49.26274) Commercial             C-3A     
+1466 09    5090750930033    (-123.156 49.23396) Commercial             C-2      
+1467 09    12152830940014  (-123.1273 49.20723) Multi-Family Dwelling  RM-3A    
+1468 09    12125827940018  (-123.1419 49.20953) Comprehensive Develop~ CD-1 (51~
+1469 09    14616234020001  (-123.0733 49.27029) Multi-Family Dwelling  RM-4     
+1470 09    29148604510120  (-123.1195 49.27811) Comprehensive Develop~ DD       
+1471 09    15692225430000   (-123.0788 49.2547) Two-Family Dwelling    RT-10    
+1472 09    14683259810000  (-123.0606 49.25883) One-Family Dwelling    RS-1     
+1473 09    22698270280000  (-123.0556 49.25127) One-Family Dwelling    RS-1     
+1474 09    7654165040019    (-123.117 49.26175) Comprehensive Develop~ CD-1 (18~
+1475 09    14593265440000  (-123.0588 49.27945) Two-Family Dwelling    RT-5     
+1476 09    30138616060118  (-123.1278 49.27367) Comprehensive Develop~ CD-1 (36~
+1477 09    26160595920029   (-123.1116 49.2788) Comprehensive Develop~ CD-1 (41~
+1478 09    20598275300000  (-123.0486 49.27721) One-Family Dwelling    RS-1     
+1479 09    8125721850000   (-123.1416 49.24442) One-Family Dwelling    RS-5     
+1480 09    23718306320037  (-123.0311 49.23741) Comprehensive Develop~ CD-1 (31~
+1481 09    13687173560002  (-123.1104 49.25764) Two-Family Dwelling    RT-6     
+1482 09    11758170250000  (-123.1153 49.23003) One-Family Dwelling    RS-1     
+1483 09    23281722240000  (-123.0445 49.24021) Two-Family Dwelling    RT-11    
+1484 09    29148602040082   (-123.117 49.27905) Comprehensive Develop~ CD-1 (34~
+1485 09    23270725460000  (-123.0574 49.24203) Two-Family Dwelling    RT-2     
+1486 09    1674037660000   (-123.1869 49.26232) One-Family Dwelling    RS-1     
+1487 09    22696297520000  (-123.0355 49.25207) One-Family Dwelling    RS-1     
+1488 09    19225719050000  (-123.0805 49.24445) One-Family Dwelling    RS-1     
+1489 09    29138614930148  (-123.1271 49.27435) Comprehensive Develop~ DD       
+1490 09    18830276340177  (-123.0509 49.20674) Comprehensive Develop~ CD-1 (24~
+1491 09    12824123530000  (-123.1448 49.21257) One-Family Dwelling    RS-1     
+1492 09    13640210080062  (-123.0816 49.26517) Multi-Family Dwelling  RM-4     
+1493 09    29134612480129  (-123.1258 49.27578) Comprehensive Develop~ DD       
+1494 09    23284718160000  (-123.0406 49.24153) One-Family Dwelling    RS-1     
+1495 09    15770211600044  (-123.0888 49.25585) Commercial             C-2      
+1496 09    14575265300010   (-123.059 49.28725) Multi-Family Dwelling  RM-3A    
+1497 09    21631270720000  (-123.0552 49.26822) One-Family Dwelling    RS-1     
+1498 09    24306770220014  (-123.0362 49.23348) Commercial             C-2      
+1499 09    23713300680000  (-123.0321 49.24284) One-Family Dwelling    RS-1     
+1500 09    25305810270043  (-123.0386 49.22007) Comprehensive Develop~ CD-1 (68)
+1501 09    23316710210000  (-123.0253 49.24396) One-Family Dwelling    RS-1     
+1502 09    27602115090022  (-123.1306 49.28869) Commercial             C-6      
+1503 09    29148602040013   (-123.117 49.27905) Comprehensive Develop~ CD-1 (34~
+1504 09    25315825270006   (-123.0285 49.2104) Comprehensive Develop~ CD-1 (11~
+1505 09    14685250680002   (-123.0688 49.2564) Two-Family Dwelling    RT-5N    
+1506 09    29138606040001  (-123.1214 49.27763) Comprehensive Develop~ DD       
+1507 09    15697184330001   (-123.104 49.25303) One-Family Dwelling    RS-7     
+1508 09    12138828390001  (-123.1361 49.20942) Two-Family Dwelling    RT-2     
+1509 09    24762278540000   (-123.051 49.22731) One-Family Dwelling    RS-1     
+1510 09    6814085380000   (-123.1534 49.21686) One-Family Dwelling    RS-1     
+1511 09    27609114020084  (-123.1373 49.28532) Multi-Family Dwelling  RM-5A    
+1512 09    27607110940003   (-123.1391 49.2878) Multi-Family Dwelling  RM-5A    
+1513 09    2678050570000   (-123.1769 49.26177) One-Family Dwelling    RS-5     
+1514 09    2087670020002    (-123.155 49.26076) Commercial             C-7      
+1515 09    2664084530165   (-123.1575 49.26265) Comprehensive Develop~ CD-1 (34~
+1516 09    9703150590000   (-123.1257 49.25195) One-Family Dwelling    RS-5     
+1517 09    29156602510084   (-123.117 49.27827) Comprehensive Develop~ DD       
+1518 09    26603162680239  (-123.1152 49.27604) Comprehensive Develop~ CD-1 (32~
+1519 09    27603118890023  (-123.1262 49.28446) Multi-Family Dwelling  RM-5B    
+1520 09    16742210530000   (-123.089 49.23592) One-Family Dwelling    RS-1     
+1521 09    26172595060166  (-123.1053 49.27943) Comprehensive Develop~ CD-1 (37~
+1522 09    7664134940042   (-123.1343 49.26137) Comprehensive Develop~ CD-1 (39~
+1523 09    13770191030067  (-123.0993 49.26331) Commercial             C-3A     
+1524 09    13646212970008  (-123.0855 49.26458) Multi-Family Dwelling  RM-4     
+1525 09    29134608970112   (-123.125 49.27705) Comprehensive Develop~ DD       
+1526 09    13645212060020  (-123.0868 49.26497) Multi-Family Dwelling  RM-4     
+1527 09    29126606020116  (-123.1242 49.27949) Comprehensive Develop~ DD       
+1528 09    13640210080105  (-123.0882 49.26609) Multi-Family Dwelling  RM-4N    
+1529 09    4692053910000    (-123.1746 49.2569) One-Family Dwelling    RS-1     
+1530 09    30162604050003  (-123.1161 49.27605) Comprehensive Develop~ CD-1 (32~
+1531 09    26600118510078  (-123.1242 49.28684) Comprehensive Develop~ CD-1 (44~
+1532 09    27616117750030  (-123.1367 49.28011) Multi-Family Dwelling  RM-5A    
+1533 09    26172595030183  (-123.1078 49.27882) Comprehensive Develop~ CD-1 (26~
+1534 09    19250762050048  (-123.0661 49.22733) Commercial             C-2      
+1535 09    6038750780000   (-123.1865 49.23199) One-Family Dwelling    RS-5     
+1536 09    15770217970010  (-123.0823 49.25349) Commercial             C-2      
+1537 09    26120604040378  (-123.1242 49.28196) Comprehensive Develop~ CD-1 (22~
+1538 09    26120605980024  (-123.1251 49.28108) Comprehensive Develop~ CD-1 (32~
+1539 09    30614157940086  (-123.1221 49.27177) Comprehensive Develop~ CD-1 (29~
+1540 09    30157606020414  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+1541 09    29156604070233  (-123.1185 49.27757) Comprehensive Develop~ DD       
+1542 09    2650090920044   (-123.1507 49.26357) Commercial             C-3A     
+1543 09    26600115960100   (-123.129 49.28901) Comprehensive Develop~ DD       
+1544 09    30161606550167  (-123.1166 49.27363) Comprehensive Develop~ CD-1 (32~
+1545 09    12132817270000  (-123.1394 49.21461) Multi-Family Dwelling  RM-8     
+1546 09    2640053080047   (-123.1753 49.26837) Multi-Family Dwelling  RM-4     
+1547 09    29126612020102  (-123.1273 49.27738) Comprehensive Develop~ DD       
+1548 09    18830276940002   (-123.0478 49.2072) Comprehensive Develop~ CD-1 (24~
+1549 09    2688041960000   (-123.1823 49.25861) One-Family Dwelling    RS-5     
+1550 09    21270631860000  (-123.0561 49.26777) Multi-Family Dwelling  RM-12N   
+1551 09    2640053080053     (-123.175 49.2682) Multi-Family Dwelling  RM-4     
+1552 09    14580265090024  (-123.0594 49.28505) Multi-Family Dwelling  RM-3A    
+1553 09    3712037030000    (-123.1879 49.2493) One-Family Dwelling    RS-5     
+1554 09    15236698240000  (-123.0715 49.25108) Two-Family Dwelling    RT-10    
+1555 09    30186605760009  (-123.1017 49.27431) Comprehensive Develop~ CD-1 (26~
+1556 09    30162604050247  (-123.1156 49.27583) Comprehensive Develop~ CD-1 (32~
+1557 09    30157606020276  (-123.1159 49.27505) Comprehensive Develop~ CD-1 (32~
+1558 09    9150694080016    (-123.127 49.25414) Multi-Family Dwelling  RM-3A    
+1559 09    30124616060073  (-123.1313 49.27609) Comprehensive Develop~ CD-1 (27~
+1560 09    30157614070153   (-123.1249 49.2736) Comprehensive Develop~ CD-1 (26~
+1561 09    26600116030166  (-123.1275 49.28899) Comprehensive Develop~ DD       
+1562 09    13646217420008    (-123.0821 49.264) Multi-Family Dwelling  RM-4     
+1563 09    15708210440000  (-123.0889 49.24901) One-Family Dwelling    RS-1     
+1564 09    1634022620000   (-123.2102 49.27191) One-Family Dwelling    RS-1     
+1565 09    23718316960106  (-123.0255 49.23485) Comprehensive Develop~ CD-1 (31~
+1566 09    1650034710000    (-123.189 49.26468) One-Family Dwelling    RS-1     
+1567 09    28583110050069   (-123.132 49.29295) Comprehensive Develop~ CD-1 (32~
+1568 09    27615119940088  (-123.1321 49.27776) Comprehensive Develop~ CD-1 (16~
+1569 09    29148606030125   (-123.1208 49.2773) Comprehensive Develop~ DD       
+1570 09    8123695340000   (-123.1427 49.25516) Other                  FSHCA    
+1571 09    2640053080036    (-123.175 49.26837) Multi-Family Dwelling  RM-4     
+1572 09    29138604990097   (-123.121 49.27818) Comprehensive Develop~ DD       
+1573 09    18839246020066    (-123.067 49.2071) Comprehensive Develop~ CD-1 (26~
+1574 09    29124608970070  (-123.1281 49.27884) Comprehensive Develop~ DD       
+1575 09    7683146970026   (-123.1297 49.25994) Multi-Family Dwelling  RM-3     
+1576 09    14259604230000  (-123.0622 49.27438) Two-Family Dwelling    RT-5     
+1577 09    17216819800000  (-123.0853 49.21312) One-Family Dwelling    RS-1     
+1578 09    2640058320015   (-123.1728 49.26817) Multi-Family Dwelling  RM-4     
+1579 09    27119603910014   (-123.127 49.28351) Multi-Family Dwelling  RM-5B    
+1580 09    30617121240108  (-123.1342 49.27623) One-Family Dwelling    RS-1     
+1581 09    3747042050000    (-123.1818 49.2359) One-Family Dwelling    RS-5     
+1582 09    19231750860000  (-123.0753 49.23083) One-Family Dwelling    RS-1     
+1583 09    26592116040088  (-123.1267 49.28907) Comprehensive Develop~ DD       
+1584 09    23294726780000  (-123.0433 49.23656) One-Family Dwelling    RS-1     
+1585 09    4090722020114   (-123.1527 49.24436) Comprehensive Develop~ CD-1 (22)
+1586 09    26595172970088  (-123.1048 49.27918) Comprehensive Develop~ CD-1 (26~
+1587 09    26600115960030   (-123.129 49.28901) Comprehensive Develop~ DD       
+1588 09    1646020260000   (-123.2139 49.26625) One-Family Dwelling    RS-1     
+1589 09    3691030620000   (-123.1946 49.25721) One-Family Dwelling    RS-5     
+1590 09    29156604670266  (-123.1189 49.27686) Comprehensive Develop~ DD       
+1591 09    15210698930003  (-123.0902 49.25121) Two-Family Dwelling    RT-2     
+1592 09    13646190910002  (-123.0996 49.26506) Light Industrial       IC-3     
+1593 09    4701073680000   (-123.1626 49.25263) One-Family Dwelling    RS-1     
+1594 09    26161599060235  (-123.1102 49.27909) Comprehensive Develop~ CD-1 (41~
+1595 09    11757175760000  (-123.1115 49.23029) Multi-Family Dwelling  RM-8A    
+1596 09    24758270420000   (-123.0534 49.2291) One-Family Dwelling    RS-1     
+1597 09    18830170400307  (-123.1168 49.21014) Comprehensive Develop~ CD-1 (52~
+1598 09    30618129380148  (-123.1314 49.27335) Comprehensive Develop~ CD-1 (36~
+1599 09    16210719020125  (-123.0895 49.24429) Commercial             C-2      
+1600 09    23722284540000   (-123.042 49.23955) One-Family Dwelling    RS-1     
+1601 09    2642095050031     (-123.15 49.26749) Multi-Family Dwelling  RM-4     
+1602 09    19226750860000  (-123.0795 49.23106) One-Family Dwelling    RS-1     
+1603 09    27605107240018    (-123.142 49.2925) Multi-Family Dwelling  RM-5B    
+1604 09    26138600540061  (-123.1176 49.28016) Comprehensive Develop~ DD       
+1605 09    4725077790000   (-123.1602 49.24278) One-Family Dwelling    RS-1     
+1606 09    10150752070010  (-123.1286 49.23255) Comprehensive Develop~ CD-1 (29~
+1607 09    26172595060408  (-123.1075 49.27882) Comprehensive Develop~ CD-1 (26~
+1608 09    2650040620020   (-123.1845 49.26405) Commercial             C-2      
+1609 09    2646073770001    (-123.163 49.26598) Two-Family Dwelling    RT-8     
+1610 09    30186605760120  (-123.1017 49.27431) Comprehensive Develop~ CD-1 (26~
+1611 09    22698282480000  (-123.0404 49.25124) One-Family Dwelling    RS-1     
+1612 09    2042636670001   (-123.1818 49.26973) Two-Family Dwelling    RT-8     
+1613 09    23270710220000  (-123.0563 49.24429) Multi-Family Dwelling  RM-7N    
+1614 09    27604119540123  (-123.1256 49.28321) Comprehensive Develop~ DD       
+1615 09    23316714820002  (-123.0249 49.23822) Two-Family Dwelling    RT-4A    
+1616 09    24312759120000  (-123.0316 49.22825) One-Family Dwelling    RS-1     
+1617 09    13654171530004  (-123.1119 49.26245) Multi-Family Dwelling  RM-4     
+1618 09    23718316960003  (-123.0255 49.23485) Comprehensive Develop~ CD-1 (31~
+1619 09    7646122090075   (-123.1432 49.26564) Commercial             C-3A     
+1620 09    16727210430000  (-123.0891 49.24283) One-Family Dwelling    RS-1     
+1621 09    7632124530174   (-123.1418 49.27256) Comprehensive Develop~ FCCDD    
+1622 09    26116573940021   (-123.1263 49.2895) Comprehensive Develop~ CD-1 (25~
+1623 09    1670037710011   (-123.1865 49.26376) Commercial             C-2      
+1624 09    29138608980155  (-123.1235 49.27599) Comprehensive Develop~ DD       
+1625 09    13650217040005  (-123.0817 49.26234) Multi-Family Dwelling  RM-4N    
+1626 09    24758317450000  (-123.0256 49.22948) One-Family Dwelling    RS-1     
+1627 09    4701067380000   (-123.1693 49.25253) One-Family Dwelling    RS-1     
+1628 09    26589178080044  (-123.1037 49.28229) Historical Area        HA-2     
+1629 09    1674026440000   (-123.2047 49.26256) One-Family Dwelling    RS-1     
+1630 09    3726032070000   (-123.1935 49.24361) One-Family Dwelling    RS-5     
+1631 09    5050742800000   (-123.1783 49.23688) One-Family Dwelling    RS-5     
+1632 09    29138608040117  (-123.1227 49.27653) Comprehensive Develop~ DD       
+1633 09    12170825880143  (-123.1162 49.21184) Comprehensive Develop~ CD-1 (53~
+1634 09    2664084530157   (-123.1575 49.26265) Comprehensive Develop~ CD-1 (34~
+1635 09    16210719020146  (-123.0895 49.24429) Commercial             C-2      
+1636 09    17818201280000  (-123.0936 49.21393) One-Family Dwelling    RS-1     
+1637 09    6074765530000    (-123.1652 49.2285) One-Family Dwelling    RS-5     
+1638 09    5090757950009   (-123.1561 49.23105) Commercial             C-2      
+1639 09    20596289200000  (-123.0383 49.27801) One-Family Dwelling    RS-1     
+1640 09    29124614500018  (-123.1302 49.27677) Comprehensive Develop~ DD       
+1641 09    17811216190000   (-123.085 49.21757) One-Family Dwelling    RS-1     
+1642 09    23300770040027  (-123.0421 49.23567) Commercial             C-2      
+1643 09    23710300420000  (-123.0327 49.24424) One-Family Dwelling    RS-1     
+1644 09    30603186060027  (-123.1013 49.27556) Comprehensive Develop~ CD-1 (26~
+1645 09    3725042650000    (-123.1801 49.2445) One-Family Dwelling    RS-5     
+1646 09    24758314800000  (-123.0282 49.22898) One-Family Dwelling    RS-1     
+1647 09    13654184950009  (-123.1034 49.26232) Multi-Family Dwelling  RM-4     
+1648 09    9690153960013   (-123.1227 49.25679) Multi-Family Dwelling  RM-4     
+1649 09    17790211220000  (-123.0892 49.22518) One-Family Dwelling    RS-1     
+1650 09    7646134650027   (-123.1345 49.26551) Multi-Family Dwelling  FM-1     
+1651 09    29148604510132  (-123.1195 49.27811) Comprehensive Develop~ DD       
+1652 09    4090717090037   (-123.1535 49.24718) Comprehensive Develop~ CD-1 (94)
+1653 09    30159607880105  (-123.1182 49.27392) Comprehensive Develop~ CD-1 (32~
+1654 09    7646159030009   (-123.1214 49.26531) Multi-Family Dwelling  FM-1     
+1655 09    1634022260000   (-123.2111 49.27193) One-Family Dwelling    RS-1     
+1656 09    2664087570080   (-123.1542 49.26223) Comprehensive Develop~ CD-1 (38~
+1657 09    2626090820001    (-123.1506 49.2751) Two-Family Dwelling    RT-9     
+1658 09    9707159800000   (-123.1209 49.24981) One-Family Dwelling    RS-5     
+1659 09    19230750150000  (-123.0775 49.23199) One-Family Dwelling    RS-1     
+1660 09    21641271720000  (-123.0529 49.26451) One-Family Dwelling    RS-1     
+1661 09    14594251530037  (-123.0669 49.27959) Multi-Family Dwelling  RM-4     
+1662 09    13646212510001   (-123.086 49.26456) Multi-Family Dwelling  RM-4     
+1663 09    29138604990324  (-123.1207 49.27858) Comprehensive Develop~ DD       
+1664 09    30603186050164  (-123.1015 49.27644) Comprehensive Develop~ CD-1 (43~
+1665 09    5750054060046   (-123.1755 49.23465) Comprehensive Develop~ CD-1 (37~
+1666 09    5744056850000   (-123.1708 49.23688) One-Family Dwelling    RS-5     
+1667 09    16219719550000  (-123.0831 49.24347) One-Family Dwelling    RS-1     
+1668 09    6050803670000      (-123.18 49.2194) Limited Agriculture    RA-1     
+1669 09    23281741790000  (-123.0492 49.23421) Two-Family Dwelling    RT-11    
+1670 09    4726060630000   (-123.1688 49.24352) One-Family Dwelling    RS-5     
+1671 09    11171761590000   (-123.1151 49.2277) One-Family Dwelling    RS-1     
+1672 09    30157606020473  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+1673 09    20280588050028  (-123.0446 49.28178) Commercial             C-2C1    
+1674 09    23308718950010  (-123.0304 49.23705) Comprehensive Develop~ CD-1 (31~
+1675 09    13645210050019  (-123.0883 49.26554) Multi-Family Dwelling  RM-4     
+1676 09    2638087410002   (-123.1544 49.26928) Multi-Family Dwelling  RM-4     
+1677 09    15190691070096  (-123.1018 49.25513) Comprehensive Develop~ CD-1 (49~
+1678 09    17830195150000  (-123.0999 49.21107) One-Family Dwelling    RS-1     
+1679 09    27603108380002  (-123.1393 49.29224) Multi-Family Dwelling  RM-5B    
+1680 09    27605114060028  (-123.1343 49.28751) Multi-Family Dwelling  RM-5     
+1681 09    5758091960000   (-123.1525 49.23052) One-Family Dwelling    RS-6     
+1682 09    4717050480000     (-123.177 49.2468) One-Family Dwelling    RS-5     
+1683 09    26597117280033  (-123.1254 49.28822) Comprehensive Develop~ CD-1 (25~
+1684 09    10120790270000  (-123.1484 49.22659) One-Family Dwelling    RS-6     
+1685 09    7169632590041   (-123.1154 49.26948) Comprehensive Develop~ FCCDD    
+1686 09    27606117410099   (-123.131 49.28477) Multi-Family Dwelling  RM-5B    
+1687 09    14577267040001  (-123.0575 49.28544) Multi-Family Dwelling  RM-3A    
+1688 09    23320718950549  (-123.0238 49.23264) Commercial             C-2      
+1689 09    7643130960018    (-123.1367 49.2657) Commercial             C-3A     
+1690 09    1688027760000   (-123.2008 49.25889) One-Family Dwelling    RS-1     
+1691 09    23301726820000  (-123.0399 49.23641) One-Family Dwelling    RS-1     
+1692 09    15770225050023  (-123.0798 49.25156) Commercial             C-2      
+1693 09    23283718790000  (-123.0433 49.24092) One-Family Dwelling    RS-1     
+1694 09    2688042860000    (-123.1809 49.2586) One-Family Dwelling    RS-5     
+1695 09    9691150810000   (-123.1249 49.25645) One-Family Dwelling    RS-7     
+1696 09    2642050940000    (-123.176 49.26735) Two-Family Dwelling    RT-7     
+1697 09    24790300970000  (-123.0391 49.22495) One-Family Dwelling    RS-1     
+1698 09    21280650870000  (-123.0448 49.26115) One-Family Dwelling    RS-1     
+1699 09    29152606880056  (-123.1199 49.27662) Historical Area        HA-3     
+1700 09    20575275410000  (-123.0482 49.28801) One-Family Dwelling    RS-1     
+1701 09    14580259570020  (-123.0605 49.28507) Multi-Family Dwelling  RM-3A    
+1702 09    29156604070009  (-123.1185 49.27757) Comprehensive Develop~ DD       
+1703 09    23720312080119  (-123.0295 49.23574) Comprehensive Develop~ CD-1 (31~
+1704 09    29131614930005   (-123.128 49.27558) Comprehensive Develop~ CD-1 (48~
+1705 09    27615119930055  (-123.1315 49.27795) Comprehensive Develop~ CD-1 (53~
+1706 09    15242696080039  (-123.0693 49.25083) Comprehensive Develop~ CD-1 (42~
+1707 09    7664134940040   (-123.1343 49.26137) Comprehensive Develop~ CD-1 (39~
+1708 09    23320718950539  (-123.0238 49.23264) Commercial             C-2      
+1709 09    2683090930001   (-123.1509 49.26028) Two-Family Dwelling    RT-8     
+1710 09    25831241350002  (-123.0695 49.20963) One-Family Dwelling    RS-1B    
+1711 09    26600115970040  (-123.1283 49.28946) Comprehensive Develop~ CD-1 (22~
+1712 09    18285830060026  (-123.0478 49.20753) Comprehensive Develop~ CD-1 (24~
+1713 09    15190691960001   (-123.1009 49.2552) Commercial             C-2      
+1714 09    21650270980249  (-123.0562 49.26199) Comprehensive Develop~ CD-1 (51~
+1715 09    19750221260000   (-123.0822 49.2325) One-Family Dwelling    RS-1     
+1716 09    21650270980023  (-123.0531 49.26152) Comprehensive Develop~ CD-1 (16~
+1717 09    13592205470000  (-123.0885 49.28042) Two-Family Dwelling    RT-3     
+1718 09    20604312600000   (-123.0247 49.2747) One-Family Dwelling    RS-1     
+1719 09    27613113030006  (-123.1408 49.28552) Multi-Family Dwelling  RM-5A    
+1720 09    22692297490000  (-123.0353 49.25421) One-Family Dwelling    RS-1     
+1721 09    15239698470006  (-123.0707 49.25105) Two-Family Dwelling    RT-10    
+1722 09    29148602250103  (-123.1176 49.27932) Comprehensive Develop~ DD       
+1723 09    5737071440000   (-123.1669 49.23917) One-Family Dwelling    RS-5     
+1724 09    23320718950383  (-123.0238 49.23264) Commercial             C-2      
+1725 09    23716317640037   (-123.025 49.23669) Comprehensive Develop~ CD-1 (24~
+1726 09    23716317640072  (-123.0253 49.23644) Comprehensive Develop~ CD-1 (24~
+1727 09    15710230550060  (-123.0758 49.24898) Comprehensive Develop~ CD-1 (42~
+1728 09    23316718080240  (-123.0262 49.23514) Comprehensive Develop~ CD-1 (31~
+1729 09    23770270140014  (-123.0576 49.24108) Comprehensive Develop~ CD-1 (48~
+1730 09    30190605770036  (-123.1005 49.27359) Comprehensive Develop~ CD-1 (26~
+1731 09    29129614950181  (-123.1288 49.27598) Comprehensive Develop~ CD-1 (54~
+1732 09    2643087250033   (-123.1546 49.26667) Multi-Family Dwelling  RM-4     
+1733 09    20570275490000  (-123.0482 49.28901) One-Family Dwelling    RS-1     
+1734 09    13650201970030  (-123.0912 49.26271) Commercial             C-2C     
+1735 09    6759053770000   (-123.1765 49.23098) One-Family Dwelling    RS-5     
+1736 09    13684191470009  (-123.0992 49.25863) Multi-Family Dwelling  RM-4     
+1737 09    26580138760018  (-123.1092 49.28417) Historical Area        HA-2     
+1738 09    26600116930140  (-123.1269 49.28859) Comprehensive Develop~ DD       
+1739 09    23279718260000  (-123.0447 49.24306) One-Family Dwelling    RS-1     
+1740 09    29156602960114  (-123.1167 49.27801) Comprehensive Develop~ DD       
+1741 09    29138606040133  (-123.1211 49.27759) Comprehensive Develop~ DD       
+1742 09    2646040060007   (-123.1855 49.26581) Multi-Family Dwelling  RM-4     
+1743 09    27615118580088  (-123.1348 49.27951) Multi-Family Dwelling  RM-5A    
+1744 09    26600117080463   (-123.1256 49.2872) Comprehensive Develop~ CD-1 (34~
+1745 09    26602156080045   (-123.115 49.27874) Comprehensive Develop~ DD       
+1746 09    20300598060029  (-123.0305 49.27684) Comprehensive Develop~ CD-1 (11~
+1747 09    5090757950006   (-123.1561 49.23105) Commercial             C-2      
+1748 09    23718316960125  (-123.0255 49.23485) Comprehensive Develop~ CD-1 (31~
+1749 09    13179634200063  (-123.1093 49.27116) Comprehensive Develop~ CD-1 (45~
+1750 09    19230728410000  (-123.0768 49.24112) One-Family Dwelling    RS-1     
+1751 09    2688090650000   (-123.1519 49.25843) Two-Family Dwelling    RT-8     
+1752 09    2670087090085   (-123.1545 49.26133) Comprehensive Develop~ CD-1 (32~
+1753 09    5744079520005   (-123.1594 49.23623) Multi-Family Dwelling  RM-3     
+1754 09    7636124850041   (-123.1386 49.26981) Comprehensive Develop~ FCCDD    
+1755 09    7683150500017   (-123.1258 49.25935) Multi-Family Dwelling  RM-4     
+1756 09    4696056620000   (-123.1738 49.25436) One-Family Dwelling    RS-1     
+1757 09    10133755940000  (-123.1377 49.23071) One-Family Dwelling    RS-1     
+1758 09    29138614930210  (-123.1271 49.27435) Comprehensive Develop~ DD       
+1759 09    14236612080013  (-123.0712 49.27117) Multi-Family Dwelling  RM-4     
+1760 09    23728276440000  (-123.0501 49.23983) Multi-Family Dwelling  RM-7     
+1761 09    30612157030359  (-123.1196 49.27382) Comprehensive Develop~ CD-1 (32~
+1762 09    2640073040009   (-123.1643 49.26805) Multi-Family Dwelling  RM-4     
+1763 09    7640134950101   (-123.1349 49.26664) Comprehensive Develop~ FCCDD    
+1764 09    7165632200007    (-123.1174 49.2687) Comprehensive Develop~ FCCDD    
+1765 09    30138616070111  (-123.1274 49.27367) Comprehensive Develop~ CD-1 (36~
+1766 09    14577265320022  (-123.0588 49.28545) Multi-Family Dwelling  RM-3A    
+1767 09    29126608920166  (-123.1269 49.27785) Comprehensive Develop~ DD       
+1768 09    22304684630000  (-123.0308 49.25639) One-Family Dwelling    RS-1     
+1769 09    13670222590000  (-123.0794 49.25988) Two-Family Dwelling    RT-5     
+1770 09    22691308780000   (-123.0272 49.2523) One-Family Dwelling    RS-1     
+1771 09    22685277260000  (-123.0463 49.25608) One-Family Dwelling    RS-1     
+1772 09    26120604040228  (-123.1242 49.28196) Comprehensive Develop~ CD-1 (22~
+1773 09    30157606020526  (-123.1168 49.27458) Comprehensive Develop~ CD-1 (32~
+1774 09    1670022340020   (-123.2106 49.26354) Commercial             C-2      
+1775 09    29138614930249  (-123.1271 49.27435) Comprehensive Develop~ DD       
+1776 09    14633234140002  (-123.0732 49.26757) Multi-Family Dwelling  RM-4     
+1777 09    6086802150000   (-123.1534 49.22108) One-Family Dwelling    RS-1     
+1778 09    27605114060027  (-123.1343 49.28751) Multi-Family Dwelling  RM-5     
+1779 09    13634186500017   (-123.102 49.27101) Comprehensive Develop~ CD-1 (51~
+1780 09    12144835920118  (-123.1342 49.20355) Commercial             C-2      
+1781 09    28115573060008  (-123.1281 49.29048) Comprehensive Develop~ CD-1 (31~
+1782 09    7643134020037   (-123.1354 49.26538) Multi-Family Dwelling  FM-1     
+1783 09    29148602840153  (-123.1181 49.27854) Comprehensive Develop~ DD       
+1784 09    7686153470002   (-123.1238 49.25876) Multi-Family Dwelling  RM-4     
+1785 09    20604274860000  (-123.0497 49.27472) One-Family Dwelling    RS-1     
+1786 09    13594212070004  (-123.0871 49.27937) Two-Family Dwelling    RT-3     
+1787 09    26160592250022  (-123.1099 49.28065) Comprehensive Develop~ DD       
+1788 09    30614157940089  (-123.1221 49.27177) Comprehensive Develop~ CD-1 (29~
+1789 09    27601119060131  (-123.1237 49.28487) Comprehensive Develop~ CD-1 (17~
+1790 09    5090757950018   (-123.1561 49.23105) Commercial             C-2      
+1791 09    13684217490000  (-123.0824 49.25794) Two-Family Dwelling    RT-5     
+1792 09    18839246020047  (-123.0665 49.20721) Comprehensive Develop~ CD-1 (26~
+1793 09    29126612020109  (-123.1273 49.27738) Comprehensive Develop~ DD       
+1794 09    11813150930023  (-123.1265 49.21714) Comprehensive Develop~ CD-1 (35~
+1795 09    21630271530000  (-123.0532 49.26981) One-Family Dwelling    RS-5     
+1796 09    7165633500024   (-123.1172 49.26731) Comprehensive Develop~ FCCDD    
+1797 09    7632124530074   (-123.1413 49.27206) Comprehensive Develop~ FCCDD    
+1798 09    13640170920046  (-123.1132 49.26709) Commercial             C-3A     
+1799 09    13646194040035  (-123.0983 49.26429) Multi-Family Dwelling  RM-4     
+1800 09    13182638950064  (-123.1068 49.26951) Comprehensive Develop~ CD-1 (53~
+1801 09    7688130950028   (-123.1371 49.25821) Multi-Family Dwelling  RM-3     
+1802 09    3737037690000   (-123.1862 49.23979) One-Family Dwelling    RS-5     
+1803 09    29138604440105  (-123.1199 49.27836) Comprehensive Develop~ DD       
+1804 09    12817152260000   (-123.1266 49.2144) One-Family Dwelling    RS-1     
+1805 09    2670087090076   (-123.1545 49.26133) Comprehensive Develop~ CD-1 (32~
+1806 09    16730212470000  (-123.0871 49.24055) One-Family Dwelling    RS-1     
+1807 09    3696034570000   (-123.1892 49.25494) One-Family Dwelling    RS-5     
+1808 09    13589198330000  (-123.0906 49.28237) Comprehensive Develop~ DEOD     
+1809 09    8120725640000    (-123.1465 49.2426) One-Family Dwelling    RS-5     
+1810 09    7646149660006   (-123.1276 49.26492) Multi-Family Dwelling  FM-1     
+1811 09    1639028470000    (-123.2044 49.2693) One-Family Dwelling    RS-1     
+1812 09    3739034420000    (-123.1899 49.2383) One-Family Dwelling    RS-5     
+1813 09    21648282340000  (-123.0407 49.26268) One-Family Dwelling    RS-1     
+1814 09    14570255380004  (-123.0593 49.28816) Multi-Family Dwelling  RM-3A    
+1815 09    4083715740003   (-123.1564 49.24805) Comprehensive Develop~ CD-1 (78)
+1816 09    7149648930035   (-123.1294 49.26374) Commercial             C-3A     
+1817 09    5090742070029   (-123.1559 49.23705) Commercial             C-2      
+1818 09    7640163200027   (-123.1182 49.26577) Multi-Family Dwelling  FM-1     
+1819 09    7643130990135    (-123.138 49.26627) Commercial             C-3A     
+1820 09    23718316960075  (-123.0255 49.23485) Comprehensive Develop~ CD-1 (31~
+1821 09    27607116080057   (-123.134 49.28453) Multi-Family Dwelling  RM-5     
+1822 09    2688084420002   (-123.1568 49.25801) Two-Family Dwelling    RT-7     
+1823 09    27609114020013  (-123.1373 49.28532) Multi-Family Dwelling  RM-5A    
+1824 09    26600116040228  (-123.1279 49.28835) Comprehensive Develop~ CD-1 (31~
+1825 09    21300641610000  (-123.0342 49.26403) One-Family Dwelling    RS-1     
+1826 09    15770212780027   (-123.0865 49.2548) Commercial             C-2      
+1827 09    16188722120000  (-123.1022 49.24426) One-Family Dwelling    RS-1     
+1828 09    13645201940028  (-123.0918 49.26499) Multi-Family Dwelling  RM-4     
+1829 09    28589117090002  (-123.1234 49.28965) Comprehensive Develop~ CD-1 (36~
+1830 09    21648274740000  (-123.0504 49.26271) One-Family Dwelling    RS-1     
+1831 09    26120605980134  (-123.1251 49.28108) Comprehensive Develop~ CD-1 (32~
+1832 09    29138604990030   (-123.121 49.27818) Comprehensive Develop~ DD       
+1833 09    27114602960000    (-123.133 49.2887) Multi-Family Dwelling  RM-5     
+1834 09    9690153360016   (-123.1234 49.25681) Multi-Family Dwelling  RM-4     
+1835 09    7643124870024   (-123.1396 49.26653) Commercial             C-3A     
+1836 09    13645195940010  (-123.0961 49.26517) Multi-Family Dwelling  RM-4     
+1837 09    2630077960011   (-123.1603 49.27239) Multi-Family Dwelling  RM-4     
+1838 09    27616119960053  (-123.1338 49.27737) Multi-Family Dwelling  RM-5A    
+1839 09    14616265920000  (-123.0582 49.27015) Two-Family Dwelling    RT-5     
+1840 09    2654087430044   (-123.1541 49.26315) Commercial             C-7      
+1841 09    30161612980111  (-123.1204 49.27208) Comprehensive Develop~ CD-1 (29~
+1842 09    1678034170000   (-123.1904 49.26196) One-Family Dwelling    RS-1     
+1843 09    10125755120000   (-123.141 49.23208) One-Family Dwelling    RS-3     
+1844 09    13645198400012  (-123.0944 49.26501) Multi-Family Dwelling  RM-4     
+1845 09    26600117080238  (-123.1268 49.28794) Comprehensive Develop~ CD-1 (34~
+1846 09    8150706930031    (-123.128 49.24955) Commercial             C-2      
+1847 09    2625097480001   (-123.1472 49.27613) Two-Family Dwelling    RT-9     
+1848 09    26598190450101   (-123.0986 49.2779) Historical Area        HA-1A    
+1849 09    30138616070071  (-123.1274 49.27367) Comprehensive Develop~ CD-1 (36~
+1850 09    27606110930033  (-123.1372 49.28872) Multi-Family Dwelling  RM-5A    
+1851 09    30617121030022  (-123.1339 49.27622) Comprehensive Develop~ DD       
+1852 09    20298592590000   (-123.034 49.27954) One-Family Dwelling    RS-1     
+1853 09    30124616060091  (-123.1313 49.27609) Comprehensive Develop~ CD-1 (27~
+1854 09    7646153330011   (-123.1234 49.26534) Multi-Family Dwelling  FM-1     
+1855 09    26597118030042   (-123.1239 49.2878) Comprehensive Develop~ DD       
+1856 09    4694058860000   (-123.1732 49.25526) One-Family Dwelling    RS-1     
+1857 09    5090750930022    (-123.156 49.23396) Commercial             C-2      
+1858 09    23304716740043  (-123.0328 49.23952) Comprehensive Develop~ CD-1 (22~
+1859 09    2640073540002   (-123.1634 49.26804) Multi-Family Dwelling  RM-4     
+1860 09    15770217970003  (-123.0823 49.25349) Commercial             C-2      
+1861 09    3721026190000   (-123.2035 49.24891) One-Family Dwelling    RS-5     
+1862 09    2087670020010    (-123.155 49.26076) Commercial             C-7      
+1863 09    29148604510296  (-123.1195 49.27811) Comprehensive Develop~ DD       
+1864 09    21650271070016  (-123.0543 49.26234) Comprehensive Develop~ CD-1 (30~
+1865 09    30616134520121  (-123.1286 49.27428) Comprehensive Develop~ CD-1 (36~
+1866 09    4083715740049   (-123.1572 49.24819) Comprehensive Develop~ CD-1 (78)
+1867 09    12144835920026  (-123.1342 49.20355) Commercial             C-2      
+1868 09    26595172970095  (-123.1048 49.27918) Comprehensive Develop~ CD-1 (26~
+1869 09    23320716070034   (-123.024 49.23589) Comprehensive Develop~ CD-1 (24~
+1870 09    2686072330000   (-123.1659 49.25978) One-Family Dwelling    RS-5     
+1871 09    14592265340000     (-123.0589 49.28) Two-Family Dwelling    RT-5     
+1872 09    29138608040033  (-123.1227 49.27653) Comprehensive Develop~ DD       
+1873 09    29157615050378  (-123.1261 49.27387) Comprehensive Develop~ CD-1 (18~
+1874 09    11810150140000  (-123.1281 49.21888) Multi-Family Dwelling  RM-8N    
+1875 09    29138608980035  (-123.1235 49.27599) Comprehensive Develop~ DD       
+1876 09    14269695600000  (-123.0577 49.25028) One-Family Dwelling    RS-1     
+1877 09    12822176250000   (-123.112 49.21365) Multi-Family Dwelling  RM-8     
+1878 09    13638182500148  (-123.1055 49.27006) Comprehensive Develop~ CD-1 (46~
+1879 09    21650270970057  (-123.0548 49.26274) Comprehensive Develop~ CD-1 (30~
+1880 09    14641250650000  (-123.0672 49.26527) Two-Family Dwelling    RT-5     
+1881 09    26589178930038   (-123.103 49.28259) Historical Area        HA-2     
+1882 09    17813210410000  (-123.0896 49.21677) One-Family Dwelling    RS-1     
+1883 09    29138602080032  (-123.1179 49.27974) Comprehensive Develop~ CD-1 (41~
+1884 09    14648259580000  (-123.0596 49.26292) Multi-Family Dwelling  RM-8A    
+1885 09    27613119960048  (-123.1309 49.27842) Comprehensive Develop~ CD-1 (23~
+1886 09    4083715740068   (-123.1572 49.24819) Comprehensive Develop~ CD-1 (78)
+1887 09    29157604960041  (-123.1173 49.27625) Comprehensive Develop~ DD       
+1888 09    26592116040006  (-123.1268 49.28833) Comprehensive Develop~ DD       
+1889 09    26172595030003  (-123.1078 49.27882) Comprehensive Develop~ CD-1 (26~
+1890 09    2638084190008   (-123.1571 49.26933) Multi-Family Dwelling  RM-4     
+1891 09    8122717850000   (-123.1448 49.24649) One-Family Dwelling    RS-5     
+1892 09    13648171720053  (-123.1117 49.26364) Light Industrial       I-1      
+1893 09    26597118030157   (-123.1239 49.2878) Comprehensive Develop~ DD       
+1894 09    22701300240000  (-123.0326 49.24939) One-Family Dwelling    RS-1     
+1895 09    2640041070008   (-123.1834 49.26884) Commercial             C-2      
+1896 09    26120605980036  (-123.1251 49.28108) Comprehensive Develop~ CD-1 (32~
+1897 09    23276728090035  (-123.0517 49.24039) Comprehensive Develop~ CD-1 (32~
+1898 09    26592134050290  (-123.1136 49.28431) Comprehensive Develop~ DD       
+1899 09    26600117080387   (-123.1256 49.2872) Comprehensive Develop~ CD-1 (34~
+1900 09    30126616030086  (-123.1313 49.27544) Comprehensive Develop~ CD-1 (42~
+1901 09    7686134980002    (-123.134 49.25884) Multi-Family Dwelling  RM-3     
+1902 09    21650270980163   (-123.055 49.26193) Comprehensive Develop~ CD-1 (16~
+1903 09    7634122640012   (-123.1421 49.27034) Comprehensive Develop~ CD-1 (31~
+1904 09    13598198400000  (-123.0906 49.27723) Two-Family Dwelling    RT-3     
+1905 09    29138612960053  (-123.1252 49.27494) Comprehensive Develop~ DD       
+1906 09    26130595020382  (-123.1165 49.28321) Comprehensive Develop~ CD-1 (41~
+1907 09    12156816730000  (-123.1244 49.21494) One-Family Dwelling    RS-1     
+1908 09    27607116050001  (-123.1333 49.28489) Multi-Family Dwelling  RM-5     
+1909 09    13640194940073  (-123.0972 49.26677) Light Industrial       IC-3     
+1910 09    12144835920022  (-123.1342 49.20355) Commercial             C-2      
+1911 09    2638077180001   (-123.1618 49.26889) Multi-Family Dwelling  RM-4     
+1912 09    2640042550006    (-123.1805 49.2688) Multi-Family Dwelling  RM-4     
+1913 09    15770217970014  (-123.0823 49.25349) Commercial             C-2      
+1914 09    12153828210002  (-123.1262 49.20953) Two-Family Dwelling    RT-2     
+1915 09    15691203960025  (-123.0904 49.25522) Commercial             C-2      
+1916 09    3726030330000   (-123.1957 49.24363) One-Family Dwelling    RS-5     
+1917 09    21648289340000  (-123.0381 49.26266) One-Family Dwelling    RS-1     
+1918 09    5757081080003   (-123.1584 49.23159) Multi-Family Dwelling  RM-3     
+1919 09    20588271530000  (-123.0534 49.28232) One-Family Dwelling    RS-1     
+1920 09    25252812200000   (-123.063 49.21749) One-Family Dwelling    RS-1     
+1921 09    13645210040007  (-123.0887 49.26496) Multi-Family Dwelling  RM-4     
+1922 09    7648150670005   (-123.1249 49.26451) Multi-Family Dwelling  FM-1     
+1923 09    30605186080080  (-123.1011 49.27465) Comprehensive Develop~ CD-1 (26~
+1924 09    17237793950000  (-123.0723 49.22188) One-Family Dwelling    RS-1     
+1925 09    26595172970155  (-123.1048 49.27918) Comprehensive Develop~ CD-1 (26~
+1926 09    1678034800000   (-123.1887 49.26142) One-Family Dwelling    RS-1     
+1927 09    26172580670025  (-123.1069 49.28332) Historical Area        HA-2     
+1928 09    13645198840001    (-123.0933 49.265) Multi-Family Dwelling  RM-4     
+1929 09    7646122720003   (-123.1422 49.26532) Commercial             C-3A     
+1930 09    2670087580005   (-123.1542 49.26073) Commercial             C-7      
+1931 09    30138616070086  (-123.1274 49.27367) Comprehensive Develop~ CD-1 (36~
+1932 09    4054698680000   (-123.1754 49.25329) One-Family Dwelling    RS-1     
+1933 09    4709083780000   (-123.1579 49.25116) One-Family Dwelling    RS-1     
+1934 09    6035750140000   (-123.1893 49.23438) One-Family Dwelling    RS-5     
+1935 09    3694042380000   (-123.1805 49.25529) One-Family Dwelling    RS-1     
+1936 09    25790314080088  (-123.0262 49.22365) Comprehensive Develop~ CD-1 (64)
+1937 09    23278741720001  (-123.0513 49.23444) Two-Family Dwelling    RT-11    
+1938 09    3723042200000   (-123.1813 49.24495) One-Family Dwelling    RS-5     
+1939 09    29156604070426  (-123.1185 49.27785) Comprehensive Develop~ DD       
+1940 09    10813120560000  (-123.1457 49.21745) One-Family Dwelling    RS-1     
+1941 09    11797162040000  (-123.1204 49.22237) One-Family Dwelling    RS-1     
+1942 09    1686027320000   (-123.2018 49.25981) One-Family Dwelling    RS-1     
+1943 09    12150813250000  (-123.1299 49.21673) Multi-Family Dwelling  RM-8N    
+1944 09    29138606610101  (-123.1223 49.27757) Comprehensive Develop~ DD       
+1945 09    7690150870027   (-123.1251 49.25735) Multi-Family Dwelling  RM-4     
+1946 09    29138604990309  (-123.1207 49.27858) Comprehensive Develop~ DD       
+1947 09    20577277340000  (-123.0455 49.28541) One-Family Dwelling    RS-1     
+1948 09    13650197040084  (-123.0955 49.26223) Commercial             C-2C     
+1949 09    29156604070346  (-123.1185 49.27785) Comprehensive Develop~ DD       
+1950 09    20592305710000  (-123.0266 49.28049) One-Family Dwelling    RS-1     
+1951 09    26597118030144   (-123.1239 49.2878) Comprehensive Develop~ DD       
+1952 09    16750216790000  (-123.0832 49.23308) One-Family Dwelling    RS-1     
+1953 09    20289602690000   (-123.0393 49.2742) One-Family Dwelling    RS-1     
+1954 09    13186633520197   (-123.102 49.27126) Comprehensive Develop~ CD-1 (50~
+1955 09    10122795150000  (-123.1456 49.22378) One-Family Dwelling    RS-6     
+1956 09    5733050620000   (-123.1769 49.24016) One-Family Dwelling    RS-5     
+1957 09    1633022220000    (-123.2112 49.2727) One-Family Dwelling    RS-1     
+1958 09    29134608970009   (-123.125 49.27705) Comprehensive Develop~ DD       
+1959 09    26600117530100  (-123.1256 49.28773) Comprehensive Develop~ CD-1 (26~
+1960 09    4709070970000   (-123.1656 49.24937) One-Family Dwelling    RS-1     
+1961 09    20280580450000  (-123.0446 49.28425) One-Family Dwelling    RS-1     
+1962 09    5090742070036   (-123.1559 49.23705) Commercial             C-2      
+```
+]
+
+---
+
+### Dropping geometry column
+
+
+```r
+bca_z &lt;- bca_z %&gt;% st_drop_geometry()
+bca_z %&gt;% head()
+```
+
+```
+# A tibble: 6 x 4
+  aa_id roll_num       category                  zone_name 
+  &lt;chr&gt; &lt;chr&gt;          &lt;fct&gt;                     &lt;fct&gt;     
+1 09    17793188350000 One-Family Dwelling       RS-1      
+2 09    29157615050028 Comprehensive Development CD-1 (182)
+3 09    20577271680000 One-Family Dwelling       RS-1      
+4 09    26161599560033 Comprehensive Development CD-1 (415)
+5 09    25792312470000 One-Family Dwelling       RS-1      
+6 09    23320718950465 Commercial                C-2       
+```
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,381 @@
+---
+title: "dplyr 2"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA)
+library(kableExtra)
+```
+
+count()
+
+summarise()
+
+group_by()
+
+ungroup()
+
+top_n()
+
+---
+
+```{r}
+library(tidyverse)
+```
+.pull-left-2[
+```{r}
+counties <- tibble(
+  county=c("a", "b", "c", "d", "e"), 
+  pop=c(1,2,3,4,5), 
+  income=c(14, 13, 12, 8, 10), 
+  state=c("x","x","x", "y","y"))
+```
+]
+.pull-right-1[
+```{r}
+counties
+```
+]
+
+---
+
+### ? count()
+
+Count observations by group
+
+*Usage*
+count(x, ..., wt = NULL,sort= FALSE)
+
+- x	a tibble to count.
+- ...	Variables to group by.
+- wt (Optional) If omitted (and no variable named n exists in the data), will count the number of rows. If specified, will perform a "weighted" tally by summing the (non-missing) values of variable wt. 
+- sort	if TRUE will sort output in descending order of n
+
+---
+
+.pull-left[
+```{r}
+counties
+```
+]
+.pull-right[
+```{r}
+count(counties)
+```
+```{r}
+counties %>% count()
+```
+]
+---
+
+.pull-left-1[
+```{r}
+counties
+```
+]
+
+.pull-right-2[
+```{r}
+counties %>% count(state)
+```
+```{r}
+counties %>% count(state, wt=pop)
+```
+]
+
+---
+
+```{r}
+counties %>% count(state, wt=pop)
+```
+
+```{r}
+counties %>% count(state, wt=pop, sort=TRUE)
+```
+
+---
+
+## Application
+
+Using 2016 Census public use microfile, estimate population size by census metropolitan area (CMA). 
+
+- Use "data/2016_census_pumf_ind.rds".
+- The dataset has WEIGHT column for each individual included in the survey.
+- Sorted in descending order of the population size.
+- Remove observaions where CMA is "Other census metropolitan areas, census agglomerations and other geographies".
+- Show only the six largest CMAs.
+
+---
+
+```{r}
+pumf <- read_rds("data/2016_census_pumf_ind.rds")
+```
+
+```{r eval=FALSE}
+pumf %>% select(CMA, WEIGHT) %>% View
+```
+.scroll-output[
+```{r echo=FALSE}
+pumf %>% select(CMA, WEIGHT) %>% head(20) %>% kable()
+```
+]
+
+---
+
+```{r}
+pumf %>% 
+  count(CMA, wt=WEIGHT, sort=TRUE) %>% 
+  filter(CMA != "Other census metropolitan areas, census agglomerations and other geographies") %>% 
+  head()
+```
+
+---
+
+## summarise()
+
+.pull-left-1[
+```{r}
+counties
+```
+]
+.pull-right-2[
+```{r}
+counties %>% 
+  summarise(avg_income = mean(income))
+```
+]
+
+---
+.pull-left-1[
+```{r}
+counties
+```
+]
+.pull-right-2[
+```{r}
+counties %>% 
+  summarise(avg_income = weighted.mean(income, w= pop))
+```
+]
+
+---
+
+```{r}
+counties %>% summarise(
+  total_pop=sum(pop), 
+  avg_income = weighted.mean(income, w= pop)
+  )
+```
+
+---
+
+.pull-left[
+```{r}
+counties %>% summarise(n=n())
+```
+
+```{r}
+counties %>% 
+  summarise(total_pop=sum(pop))
+```
+]
+
+--
+
+.pull-right[
+```{r}
+counties %>% count()
+```
+
+```{r}
+counties %>% count(wt=pop)
+```
+]
+
+---
+
+### Summary functions
+
+- sum()
+- mean()
+- weighted.mean()
+- median()
+- min()
+- max()
+- n()
+
+--
+
+They all generate one element result.
+
+---
+
+### group_by() - summarise()
+
+With group_by(), summarise() works on each subset defined by the group variables.
+
+---
+
+.pull-left-1[
+```{r}
+counties
+```
+]
+.pull-right-2[
+```{r}
+counties %>% 
+  group_by(state) %>% 
+  summarise(pop = sum(pop))
+```
+]
+
+---
+
+```{r}
+counties %>% group_by(state) %>% 
+  summarise(avg_income = weighted.mean(income, w=pop))
+```
+
+---
+
+.pull-left[
+```{r}
+counties
+```
+]
+
+.pull-right[
+```{r}
+counties %>% group_by(state)
+```
+]
+
+group_by() adds group variables. 
+
+When summarise() sees group variables, it runs on each subset defined by the group variables.
+
+---
+
+### Ungrouping
+
+Each time summarise() is used, the last group variables gets removed.
+```{r}
+counties %>% group_by(state, county) %>% 
+  summarise(county_pop = sum(pop))
+```
+
+---
+
+Use ungroup() to remove all groupings.
+
+```{r}
+counties %>% group_by(state, county) %>% ungroup()
+```
+
+---
+
+### Application
+
+Using 2016 Census public use microfile, estimate population size by census metropolitan area (CMA). Use group_by()-summarise().
+
+- Use "data/2016_census_pumf_ind.rds".
+- The dataset has WEIGHT column for each individual included in the survey.
+- Sorted in descending order of the population size.
+- Remove observaions where CMA is "Other census metropolitan areas, census agglomerations and other geographies".
+- Show only the six largest CMAs.
+
+---
+
+```{r}
+pumf %>% group_by(CMA) %>% 
+  summarise(n = sum(WEIGHT)) %>% 
+  filter(CMA != "Other census metropolitan areas, census agglomerations and other geographies") %>% 
+  arrange(desc(n)) %>% 
+  head()
+```
+
+---
+
+### top_n()
+
+Select top n rows by value
+
+top_n(x, n, wt)
+
+- x	a tbl() to filter
+- n	number of rows to return for top_n().
+- If x is grouped, this is the number (or fraction) of rows per group. Will include more rows if there are ties.
+- If n is positive, selects the top rows. If negative, selects the bottom rows.
+- wt	The variable to use for ordering.
+
+---
+
+.pull-left-1[
+```{r}
+counties
+```
+]
+.pull-right-2[
+```{r}
+counties %>% top_n(3, pop)
+```
+]
+
+---
+
+.pull-left-1[
+```{r}
+counties
+```
+]
+.pull-right-2[
+```{r}
+counties %>% group_by(state) %>% 
+  top_n(1, income)
+```
+]
+
+---
+
+### Application
+
+Using 2016 Census public use microfile (PUMF), estimate average individual annual total income (TOTINC) by census metropolitan area (CMA).  
+
+- Use TOTINC column for individual annual total income. (See the User Guide in data folder for details.)
+- Remove those observations whose TOTINC is either 88888888 (Not available) or 99999999 (Not applicable). (See the User Guide in data folder for details.)
+- Use weighted.mean function with w=WEIGHT argument.
+- Show only the ten highest income CMAs.
+
+---
+
+```{r eval=FALSE}
+pumf %>% select(CMA, TOTINC, WEIGHT) %>% View()
+```
+
+.scroll-output[
+```{r echo=FALSE}
+pumf %>% select(CMA, TOTINC, WEIGHT) %>% head(30) %>% kable
+```
+]
+
+---
+
+```{r}
+pumf %>% 
+  filter(TOTINC != 88888888, TOTINC != 99999999 ) %>% 
+  group_by(CMA) %>% 
+  summarise(avg_income = weighted.mean(TOTINC, w=WEIGHT)) %>% 
+  top_n(10, avg_income)
+```
+

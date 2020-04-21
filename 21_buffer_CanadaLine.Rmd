@@ -1,0 +1,157 @@
+---
+title: "Buffer Analysis - Practice"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+set.seed(0)
+```
+
+Find all housing transactions within 1km from Canada Line.
+
+---
+
+```{r}
+library(sf)
+library(tidyverse)
+```
+
+```{r}
+CanLine_Stn <- st_read("Data/CanadaLine/CanLine_Stn.shp")
+```
+
+---
+
+```{r}
+CanLine_Stn
+```
+
+---
+
+```{r}
+CanLine_Stn <- CanLine_Stn %>% select(Station)
+```
+
+```{r}
+CanLine_Stn
+```
+
+---
+
+```{r}
+ggplot() + geom_sf(data=CanLine_Stn) + geom_sf_text(aes(label=Station), CanLine_Stn, size=3)
+```
+
+---
+
+```{r}
+bca <- read_rds("Data/bca_sm.rds") %>% 
+	sample_frac(0.01) %>% 
+	select(aa_id, roll_num, lon, lat)
+```
+
+```{r}
+bca_sf <- bca %>% st_as_sf(coords= c("lon", "lat"), crs=4326)
+```
+
+---
+
+```{r}
+ggplot() + 
+	geom_sf(data=bca_sf, color="grey") + 
+	geom_sf(data=CanLine_Stn, color="red")
+```
+
+---
+
+We want to find all housing transactions that are within 1km from a Canada line station.
+
+We will create buffers of 1000 meters from Canada line stations.
+
+We have to make sure that the CRS for CanLine_Stn uses meter as distance unit.
+
+```{r}
+st_crs(CanLine_Stn)
+```
+
+If not, you have to convert CRS using st_transform(crs=26910)
+
+---
+
+```{r}
+CanLine_Stn_buffer <- CanLine_Stn %>% st_buffer(dist = 1000)
+```
+
+---
+
+```{r}
+ggplot() +
+	geom_sf(data=bca_sf, color="grey") +
+	geom_sf(data=CanLine_Stn, color="red") +
+	geom_sf(data=CanLine_Stn_buffer, color="blue", fill=NA) +
+	coord_sf(crs=4326, xlim = c(-123.2, -123), ylim=c(49.15, 49.3))
+```
+
+---
+
+### Spatial Join
+
+```{r}
+CanLine_Stn_buffer <- CanLine_Stn_buffer %>% 
+	st_transform(crs=st_crs(bca_sf))
+```
+
+```{r}
+bca_stn <- bca_sf %>% st_join(CanLine_Stn_buffer)
+```
+
+---
+
+.tiny[
+```{r}
+bca_stn
+```
+]
+
+---
+
+```{r}
+ggplot() +
+	geom_sf(aes(color=Station), data=bca_stn, alpha=0.3) +
+	scale_color_discrete(guide=FALSE) +
+	coord_sf(crs=4326, xlim = c(-123.2, -123), ylim=c(49.15, 49.3))
+```
+
+---
+
+```{r}
+bca_stn <- bca_stn %>% st_drop_geometry()
+```
+
+---
+
+```{r}
+bca_stn %>% count(Station, sort=TRUE)
+```
+
+---
+
+Transactions that are within 1km of any station on Millenium line and Expo line.
+
+```{r}
+bca_stn %>% select(-Station) %>% unique()
+```
+

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>dplyr I</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sanghoon Lee" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <script src="libs/kePrint-0.0.1/kePrint.js"></script>
+    <link rel="stylesheet" href="c407_slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# dplyr I
+### Sanghoon Lee
+### 13 January, 2020
+
+---
+
+
+
+
+select()
+
+filter()
+
+arrange()
+
+mutate()
+
+---
+
+
+```r
+library(tidyverse)
+```
+
+
+```r
+tb &lt;- tibble( a=c(2,1,3), b=c("a", "b", "c"), c=c("y","y","x") )
+tb
+```
+
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:center;"&gt; a &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; b &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; c &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; a &lt;/td&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; y &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; b &lt;/td&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; y &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; c &lt;/td&gt;
+   &lt;td style="text-align:center;width: 5em; "&gt; x &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+---
+
+## select()
+
+
+```r
+? select
+```
+
+--
+
+Choose variables from a tibble.
+
+**Usage**
+
+select(.data, ...)
+
+... variables to select
+
+---
+
+.pull-left[
+
+```r
+tb
+```
+
+```
+# A tibble: 3 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     2 a     y    
+2     1 b     y    
+3     3 c     x    
+```
+]
+
+.pull-right[
+
+```r
+select(tb, a, b)
+```
+
+```
+# A tibble: 3 x 2
+      a b    
+  &lt;dbl&gt; &lt;chr&gt;
+1     2 a    
+2     1 b    
+3     3 c    
+```
+]
+
+---
+
+## Pipe %&gt;% 
+
+* `x %&gt;% f(...)` is equivalent to `f(x,...)`.
+
+--
+
+.pull-left[
+
+```r
+select(tb, a, b)
+```
+
+```
+# A tibble: 3 x 2
+      a b    
+  &lt;dbl&gt; &lt;chr&gt;
+1     2 a    
+2     1 b    
+3     3 c    
+```
+]
+
+.pull-right[
+
+```r
+tb %&gt;% select(a,b)
+```
+
+```
+# A tibble: 3 x 2
+      a b    
+  &lt;dbl&gt; &lt;chr&gt;
+1     2 a    
+2     1 b    
+3     3 c    
+```
+]
+
+---
+
+## filter()
+
+Return rows with matching conditions.
+
+.pull-left[
+
+```r
+tb
+```
+
+```
+# A tibble: 3 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     2 a     y    
+2     1 b     y    
+3     3 c     x    
+```
+]
+
+.pull-right[
+
+```r
+filter(tb, a &gt;= 2, c == "x")
+```
+
+```
+# A tibble: 1 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     3 c     x    
+```
+]
+
+---
+
+* `x %&gt;% f(...)` is equivalent to `f(x,...)`.
+
+.pull-left[
+
+```r
+filter(tb, a &gt;= 2, c == "x")
+```
+
+```
+# A tibble: 1 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     3 c     x    
+```
+]
+
+.pull-right[
+
+```r
+tb %&gt;% filter( a &gt;= 2, c == "x")
+```
+
+```
+# A tibble: 1 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     3 c     x    
+```
+]
+
+---
+
+## Why Pipe %&gt;% ?
+
+--
+
+Easier to read.
+.pull-left[
+
+```r
+filter(tb, a &gt;= 2, c == "x")
+```
+
+```
+# A tibble: 1 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     3 c     x    
+```
+]
+
+.pull-right[
+
+```r
+tb %&gt;% filter( a &gt;= 2, c == "x")
+```
+
+```
+# A tibble: 1 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     3 c     x    
+```
+]
+
+---
+
+Chain multiple operations.
+
+Suppose you want to do the following to tb sequently:
+
+1. select columns a and c.
+2. choose rows such that a&gt;= 2 and c == "x".
+
+--
+
+.pull-left[
+
+```r
+temp &lt;- select(tb, a, c)
+filter(temp, a &gt;= 2, c == "x")
+```
+
+```
+# A tibble: 1 x 2
+      a c    
+  &lt;dbl&gt; &lt;chr&gt;
+1     3 x    
+```
+]
+
+--
+
+.pull-right[
+
+```r
+tb %&gt;% 
+  select(a, c) %&gt;% 
+  filter(a &gt;= 2, c == "x")
+```
+
+```
+# A tibble: 1 x 2
+      a c    
+  &lt;dbl&gt; &lt;chr&gt;
+1     3 x    
+```
+]
+
+---
+
+## arrange()
+
+Sort rows by variables
+
+.pull-left[
+
+```r
+tb
+```
+
+```
+# A tibble: 3 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     2 a     y    
+2     1 b     y    
+3     3 c     x    
+```
+]
+
+.pull-right[
+
+```r
+tb %&gt;% arrange(c, a)
+```
+
+```
+# A tibble: 3 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     3 c     x    
+2     1 b     y    
+3     2 a     y    
+```
+]
+
+---
+
+.pull-left[
+
+```r
+tb
+```
+
+```
+# A tibble: 3 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     2 a     y    
+2     1 b     y    
+3     3 c     x    
+```
+]
+
+.pull-right[
+
+```r
+tb %&gt;% arrange(desc(c), a)
+```
+
+```
+# A tibble: 3 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     1 b     y    
+2     2 a     y    
+3     3 c     x    
+```
+]
+
+---
+
+## mutate()
+
+Create variables
+--
+.pull-left[
+
+```r
+tb
+```
+
+```
+# A tibble: 3 x 3
+      a b     c    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+1     2 a     y    
+2     1 b     y    
+3     3 c     x    
+```
+]
+.pull-right[
+
+```r
+tb %&gt;% mutate(d = 3*a, 
+              e = paste0(b, c) )
+```
+
+```
+# A tibble: 3 x 5
+      a b     c         d e    
+  &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;
+1     2 a     y         6 ay   
+2     1 b     y         3 by   
+3     3 c     x         9 cx   
+```
+]
+
+---
+
+## Task
+
+From the bca_sm dataset, generate a tibble of housing transactions satisfying the following:
+
+- Create a new column called 'sale_year' containing the year of sale. (Use 'year()' function in 'lubridate' package.)
+- Sold in 2017.
+- Condo or townhouse (i.e., "Strata Res" in act_use_cat)
+- Price is greater than 5 million dollars.
+- Contain only the following columns: roll_num, sale_year, price, neigh_label.
+- Sorted in the descending order of price.
+
+---
+
+Restart R
+
+--
+
+Load libraries.
+
+--
+
+
+```r
+library(lubridate)
+library(tidyverse)
+```
+
+--
+
+Load the bca_sm.rds.
+
+--
+
+
+```r
+bca &lt;- read_rds("Data/bca_sm.rds")
+```
+
+--
+
+Browse data to identify relevant columns.
+
+
+```r
+View(bca)
+```
+
+---
+
+Create a new column called 'sale_year' containing the year of sale. (Use 'year()' function in 'lubridate' package.)
+
+--
+
+
+```r
+temp &lt;- bca %&gt;% mutate(sale_year = year(sale_date))
+```
+
+--
+
+Confirm that 'sale_year' column is created.
+
+```r
+temp %&gt;% View
+```
+
+---
+
+- Sold in 2017.
+- Condo or townhouse (i.e., "Strata Res" in act_use_cat)
+- Price is greater than 5 million dollars.
+
+--
+
+
+```r
+temp &lt;- temp %&gt;% filter(
+  sale_year == 2017, 
+  act_use_cat == "Strata Res", 
+  price&gt;5000000 )
+```
+
+--
+
+Confirm that they are filtered correctly.
+
+```r
+temp %&gt;% View
+```
+
+---
+
+Contain only the following columns: roll_num, sale_year, price, neigh_label.
+
+
+```r
+temp &lt;- temp %&gt;% select(roll_num, sale_year, price, neigh_label)
+```
+
+--
+
+Confirm the result:
+
+```r
+temp
+```
+
+```
+# A tibble: 23 x 4
+   roll_num       sale_year   price neigh_label
+   &lt;chr&gt;              &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;      
+ 1 2629073090001       2017 7133000 Kitsilano  
+ 2 2629073090001       2017 7133000 Kitsilano  
+ 3 26126595950150      2017 9050000 Downtown   
+ 4 26590124460135      2017 5250000 Downtown   
+ 5 26590124460135      2017 5250000 Downtown   
+ 6 26592118060107      2017 5900000 Downtown   
+ 7 26600118510188      2017 6500000 Downtown   
+ 8 26600118740015      2017 5300000 Downtown   
+ 9 26600118740027      2017 5280000 Downtown   
+10 27113601070014      2017 5600000 West End   
+# ... with 13 more rows
+```
+
+---
+
+Sorted in the descending order of price.
+
+--
+
+
+```r
+temp %&gt;% arrange(desc(price))
+```
+
+```
+# A tibble: 23 x 4
+   roll_num       sale_year    price neigh_label      
+   &lt;chr&gt;              &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;            
+ 1 28589118930012      2017 10180000 Harbour          
+ 2 26126595950150      2017  9050000 Downtown         
+ 3 28589118590050      2017  8700000 Harbour          
+ 4 28589118590004      2017  7600000 Harbour          
+ 5 2629073090001       2017  7133000 Kitsilano        
+ 6 2629073090001       2017  7133000 Kitsilano        
+ 7 30618138720051      2017  6850000 False Creek North
+ 8 26600118510188      2017  6500000 Downtown         
+ 9 28589118050027      2017  6500000 Harbour          
+10 30614161040083      2017  6500000 False Creek North
+# ... with 13 more rows
+```
+
+---
+
+
+```r
+temp &lt;- bca %&gt;% mutate(sale_year = year(sale_date))
+
+temp &lt;- temp %&gt;% filter(
+  sale_year == 2017, 
+  act_use_cat == "Strata Res", 
+  price&gt;5000000 )
+
+temp &lt;- temp %&gt;% 
+  select(roll_num, sale_year, price, neigh_label)
+
+temp %&gt;% arrange(desc(price))
+```
+
+Try rewriting the codes using the pipe, without using a temp object!
+
+---
+
+
+```r
+bca %&gt;% mutate(sale_year = year(sale_date)) %&gt;% 
+  filter(
+    sale_year == 2017, 
+    act_use_cat == "Strata Res", 
+    price&gt;5000000 ) %&gt;% 
+  select(roll_num, sale_year, price, neigh_label) %&gt;% 
+  arrange(desc(price))  
+```
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

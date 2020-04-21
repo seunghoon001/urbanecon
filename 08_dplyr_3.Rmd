@@ -1,0 +1,281 @@
+---
+title: "dplyr 3"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA)
+library(kableExtra)
+```
+
+Select helpers
+
+- :
+- contains()
+- starts_with()
+- ends_with()
+- last_col()
+- -
+
+rename()
+
+transmute()
+
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+tb <- tibble(
+  a1 = c(1,1), a2 = c(1,2), 
+  b1 = c(2,1), b2 = c(2,2), 
+  ab1=c(3,1), ab2=c(3,2)
+  )
+
+tb
+```
+
+---
+
+### Select helpers
+
+.pull-left[
+Using the select helper functions, select the following columns from tb.
+- :
+- contains()
+- starts_with()
+- ends_with()
+- last_col()
+]
+
+.pull-right[
+1. "a2", "b1", "b2", "ab1"
+1. "a1", "a2", "b1", "b2", "ab1"
+1. "a1",  "b1", "ab1"
+1. "a1", "a2", "ab1", "ab2"
+1. "b1", "ab1"
+]
+
+---
+
+.pull-left[
+```{r}
+tb
+```
+
+- "a2", "b1", "b2", "ab1"
+```{r eval=FALSE}
+tb %>% select(a2:ab1)
+```
+
+- "a1", "a2", "b1", "b2", "ab1"
+```{r eval=FALSE}
+tb %>% select(-ab2)
+```
+]
+
+.pull-right[
+
+- "a1",  "b1", "ab1"
+```{r eval=FALSE}
+tb %>% select(ends_with("1"))
+```
+
+- "a1", "a2", "ab1", "ab2"
+```{r eval=FALSE}
+tb %>% select(starts_with("a"))
+```
+
+- "b1", "ab1"
+```{r eval=FALSE}
+tb %>% select(contains("b1"))
+```
+]
+
+---
+
+### Application
+
+```{r}
+pumf <- read_rds("data/2016_census_pumf_ind.rds")
+```
+
+Select the following variables: "CMA", "CMAUID", "PPSORT", "WEIGHT", "POB", "POBF", "POBM", and save the result as pob. Print the first 6 rows.
+
+---
+
+.scroll-output[
+```{r}
+pumf %>% names()
+```
+]
+ 
+---
+
+```{r}
+pob <- pumf %>% select(CMA:WEIGHT, starts_with("POB"))
+pob %>% head()
+```
+
+---
+
+Estimate the number of people by POBF and POBM, sort the counts in the descending order, and save the result as pob_n. Print the top 20 rows.
+
+---
+
+```{r}
+pob_n <- pob %>% 
+  group_by(POBF, POBM) %>% 
+  summarise(n=sum(WEIGHT)) %>% 
+  arrange(desc(n))
+```
+
+--
+
+```{r eval=FALSE}
+pob_n <- pob %>% 
+  count(POBF, POBM, wt=WEIGHT, sort=TRUE)
+```
+
+---
+
+.scroll-output[
+```{r}
+pob_n %>% top_n(20)
+```
+]
+
+---
+
+Remove the observations where POBF and POBM are equal. Show the top 20 rows.
+
+--
+
+.scroll-output[
+```{r}
+pob_n %>% filter(POBF != POBM) %>% top_n(20)
+```
+]
+
+---
+
+### rename()
+
+Rename a1 and a2 to c1 and c2 respectively
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+tb %>% rename(c1=a1, c2=a2)
+```
+]
+
+---
+
+You can also rename while selecting or grouping.
+
+.pull-left[
+```{r}
+tb %>% select(c1=a1, c2=a2)
+```
+]
+
+.pull-right[
+```{r}
+tb %>% group_by(c1=a1) %>% 
+  summarise(avg_a2 = mean(a2))
+```
+]
+
+But do not use select() or group_by() just for renaming columns.
+
+---
+
+### transmute()
+
+mutate() + select()
+
+.pull-left[
+```{r}
+tb
+```
+]
+
+.pull-right[
+```{r}
+tb %>% transmute(a1, a3=a1+a2)
+```
+]
+
+---
+
+### Application
+
+```{r}
+bca <- read_rds("data/bca_sm.rds")
+```
+
+Create three columns, sale_wday, sale_month, sale_year, that contain the weekday, month and year of sale. (Use wday(), month(), year() in lubridate package. Use label=TRUE as the second argument in wday() and month().)
+
+Keep only the four columns: price and the new sale_wday, sale_month, and sale_year columns, and save it as temp.
+
+Remove observations with the sale_year == 2018 in temp. (The bca data end in Aug 8 2018.)
+
+Using temp, calculate the following:
+
+- the number of sales and average price by each weekday.
+- the number of sales and average price by month.
+- the number of sales and average price by year.
+
+---
+
+```{r}
+library(lubridate)
+
+temp <- bca %>% 
+  transmute(
+    price, 
+    sale_wday = wday(sale_date, label=TRUE),
+    sale_month = month(sale_date, label=TRUE),
+    sale_year = year(sale_date)
+            ) %>% 
+  filter(sale_year != 2018)
+```
+
+---
+
+```{r}
+temp %>% group_by(sale_wday) %>% 
+  summarise(n = n(), avg_price = mean(price))
+```
+
+---
+
+```{r}
+temp %>% group_by(sale_month) %>% 
+  summarise(n = n(), avg_price = mean(price))
+```
+
+---
+
+```{r}
+temp %>% group_by(sale_year) %>% 
+  summarise(n = n(), avg_price = mean(price))
+```

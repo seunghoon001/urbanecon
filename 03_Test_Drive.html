@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>Test Drive</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sanghoon Lee" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="c407_slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Test Drive
+### Sanghoon Lee
+### 07 January, 2020
+
+---
+
+
+
+
+Go to the 'C407' folder.
+
+Open 'C407.Rproj' file.
+
+- Project file. (See [here](https://r4ds.had.co.nz/workflow-projects.html#rstudio-projects) for detail.)
+
+- Sets the working folder to the folder where the file is located.
+
+--
+
+Create a new RScript.
+
+- Click 'File - New File - R Script'.
+
+- Save it in the 'Code' folder, as 'Test drive.R'.
+
+---
+
+In Console, type
+
+
+```r
+install.packages("tidyverse")
+```
+
+--
+
+In the RScript editor, 
+
+
+```r
+library(tidyverse)
+library(lubridate)
+bca &lt;- read_rds("data/bca_sm.rds")
+```
+
+- At the end of each line, press *Ctrl + Enter*.
+- The shortcut key for &lt;- is *alt + -*.
+
+---
+
+In Console,
+
+```r
+bca %&gt;% View
+```
+
+- The shortcut key for %&gt;% is *Ctrl + Shft + m*.
+
+---
+
+.scroll-output[
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; aa_id &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; aa_label &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; juris_id &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; juris_label &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; neigh_id &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; neigh_label &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; roll_num &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; roll_year &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; apt_no &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; str_no &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; str_name &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; str_dir &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; postalcode &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; lat &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; lon &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; ctuid &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; ctname &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; cmauid &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; act_use &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; act_use_cat &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; act_use_name &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; man_class &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; man_class_label &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; year_built &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; eff_year &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; floorarea &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; lotsize &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; bedrooms &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; full_bath &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; part_bath &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; price &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; sale_date &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 09 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 200 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; City of Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Point Grey &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 1019632060000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 4855 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; FANNIN AVE &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; V6T1B1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 49.27487 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -123.2230 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9330044 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 44 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 933 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; S/F Res &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Single Family Dwelling &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0150 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 1 Sty Sfd - After 1930 - Semicustom &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1971 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1971 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4199 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 38390 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9450000 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 2014-03-25 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 09 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 200 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; City of Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Point Grey &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 1019632290000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 4898 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; FANNIN AVE &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; V6T1B2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 49.27429 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -123.2243 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9330069 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 69 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 933 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; S/F Res &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Single Family Dwelling &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0073 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 3 Sty Sfd - Before 1930 - Better &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1915 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1997 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6336 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 49136 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8800000 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 2013-01-12 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 09 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 200 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; City of Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Point Grey &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 1019632450000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 4874 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; FANNIN AVE &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; V6T1B2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 49.27423 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -123.2236 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9330044 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 44 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 933 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; S/F Res &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Single Family Dwelling &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0151 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 1 1/2 Sty Sfd - After 1930 - Semicustom &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1945 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1945 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2815 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 37505 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3850000 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 2006-10-30 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+---
+
+Suppose you want to calculate average transaction price for each year. How would you do it?
+
+---
+
+In the RScript editor, 
+
+```r
+avg_price &lt;- bca %&gt;% 
+	group_by(sale_year = year(sale_date)) %&gt;% 
+	summarise(avg_price = mean(price))
+```
+
+Press 'enter' at the end of the first two lines, and 'ctrl + enter' at the last line.
+
+---
+
+In the RScript editor, 
+
+```r
+avg_price
+```
+
+---
+
+.scroll-output[
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:right;"&gt; sale_year &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; avg_price &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 268539.8 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2001 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 263544.6 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2002 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 277618.5 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 302315.5 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2004 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 339215.7 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2005 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 391340.9 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 450044.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2007 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 517164.1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 537649.4 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 521744.4 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2010 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 580574.8 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 659136.3 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 629250.1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2013 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 665234.2 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2014 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 711420.2 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2015 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 785454.6 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 907964.2 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 872805.7 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 955730.4 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+
+---
+
+In the RScript editor, 
+
+```r
+ggplot(avg_price, aes(sale_year, avg_price)) + 
+	geom_line() + 
+	geom_point() + 
+	scale_y_continuous(labels = scales::comma) 
+```
+
+---
+
+![](03_Test_Drive_files/figure-html/unnamed-chunk-9-1.png)&lt;!-- --&gt;
+
+---
+
+In the R Script editor,
+
+```r
+ggsave("Temp/avg_price.png")
+```
+
+- Check 'avg_price.png' is generated in 'C407/Temp' folder.
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+---
+title: "CanMap"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+set.seed(0)
+```
+
+```{r}
+library(VancouvR)
+library(tidyverse)
+```
+
+```{r}
+search_cov_datasets("property")
+```
+
+```{r}
+get_cov_metadata("property-tax-report") %>% View
+```
+
+```{r}
+property_tax <- get_cov_data("property-tax-report")
+```
+

@@ -1,0 +1,82 @@
+---
+title: "CanMap"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+set.seed(0)
+```
+
+Go to [Abacus Dataverse Network website](http://dvn.library.ubc.ca/). (Google "Abacus UBC")
+
+Click "Log In"
+
+Choose "UBC" in affiliated user login, and click Login.
+
+Search for "Skytrain"
+
+Click "TRANSLINK TRANSIT GIS DATA, 09 MARCH 2010"
+
+Click "Data & Analysis" tab.
+
+Download and unzip "SkyTrain" and "CanadaLine" data into the data folder. (We will use CanadaLine in a separate practice.)
+
+---
+
+```{r}
+library(sf)
+library(tidyverse)
+```
+
+---
+
+```{r}
+poi <- st_read("Data/EnhancedPointsOfInterestPointWestCan/EnhancedPointsOfInterestPointWestCan.shp")
+```
+
+---
+
+```{r}
+poi
+```
+
+---
+
+```{r}
+poi_van <- poi %>% filter(CITY %>% str_detect("VANCOUVER")) 
+```
+
+---
+
+```{r}
+poi_van
+```
+
+---
+
+```{r}
+poi_van %>% filter(NAME %>% str_detect("SCHOOL"))
+```
+
+---
+
+```{r}
+poi_van %>% filter(NAICS_1 == 61111)
+```
+
+---
+
+
