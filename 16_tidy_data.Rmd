@@ -1,0 +1,319 @@
+---
+title: "Tidy Data"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment=NA, fig.asp = 0.56, out.width='70%', dpi = 300, fig.align = 'center')
+options(tibble.print_max = Inf)
+library(kableExtra)
+```
+
+gather()
+
+separate()
+
+spread()
+
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+wide <- tibble(
+  type = c("a", "b"), 
+  yr_2017 = c(1, 1), 
+  yr_2018=c(1.2, 1.5), 
+  yr_2019=c(1.2, 1.3))
+```
+
+---
+
+.pull-left[
+```{r}
+wide
+```
+]
+
+.pull-right[
+
+You want
+
+```{r echo=FALSE, out.width='110%'}
+wide %>% 
+  gather(key = year, value =price, -type) %>%  
+  separate(year, into=c(NA, "year"), convert = TRUE) %>% 
+  ggplot(aes(year, price, color=type)) + geom_line() + geom_point()
+```
+]
+
+---
+
+.pull-left[
+```{r}
+wide
+```
+]
+
+.pull-right[
+
+You need long form
+
+```{r echo=FALSE, out.width='110%'}
+wide %>% 
+  gather(key = year, value =price, -type) %>%  
+  separate(year, into=c(NA, "year"), convert = TRUE)
+```
+]
+
+---
+
+.pull-left[
+```{r}
+wide
+```
+]
+
+.pull-right[
+```{r}
+wide %>% 
+  gather(key = year, value =price)
+```
+]
+
+---
+
+.pull-left[
+.small[
+```{r}
+wide
+```
+]]
+
+.pull-right[
+.small[
+```{r}
+wide %>% 
+  gather(key=year, value=price, 
+         yr_2017:yr_2019)
+```
+]]
+
+---
+
+.pull-left[
+.small[
+```{r}
+wide
+```
+]]
+
+.pull-right[
+.small[
+```{r}
+wide %>% 
+  gather(key=year, value=price, 
+         -type)
+```
+]]
+
+---
+
+```{r}
+wide %>% gather(key=year, value=price, -type) %>% 
+  separate(year, into=c("item", "year"), sep="_")
+```
+
+---
+
+```{r}
+long <- wide %>% gather(key=year, value=price, -type) %>% 
+  separate(year, into=c(NA, "year"), convert = TRUE)
+long
+```
+
+---
+
+### UK housing data
+
+.small[
+1. Go to [UK Office for National Statistics](https://www.ons.gov.uk/) (Google it.)
+
+1. Click People, population and community - Housing.
+
+1. Scroll down the web-page to a sub-header called "Datasets related to housing"
+
+1. Click on the second listed data-set called "Residential property sales for administrative geographies: HPSSA dataset 6"
+
+1. Go to "Your download option - current" and click 'xls (2.0 MB)'
+
+1. Move the downloaded xls file into 'C407/Data' folder.
+
+1. Browse data using MS-Excel.
+]
+
+---
+
+.small[
+```{r}
+wide_1a <- readxl::read_excel(
+  "Data/hpssadataset6numofresidentialpropertysalesforadmingeos.xls", 
+  sheet = "1a", skip = 6)
+```
+]
+
+```{r eval=FALSE}
+wide_1a %>% View
+```
+
+---
+
+.scroll-output[
+.small[
+```{r echo=FALSE}
+wide_1a %>% kable()
+```
+]]
+
+---
+
+```{r}
+wide_1a <- wide_1a %>% 
+  filter(!is.na(Code)) %>% 
+  select(-starts_with("..."))
+```
+
+```{r eval=FALSE}
+wide_1a %>% View
+```
+
+---
+
+.scroll-output[
+.small[
+```{r echo=FALSE}
+wide_1a %>% kable()
+```
+]]
+
+---
+
+```{r}
+long_1a <- wide_1a %>% 
+  gather(key=year, value=num_sales, -Code, -Name)
+```
+
+```{r eval=FALSE}
+long_1a %>% View
+```
+
+---
+
+.scroll-output[
+.small[
+```{r echo=FALSE}
+long_1a %>% kable()
+```
+]]
+
+---
+
+```{r}
+long_1a <- long_1a %>% 
+  separate(year, into = c(NA, "year"), sep = " ending ")
+```
+
+
+```{r eval=FALSE}
+long_1a %>% View
+```
+
+---
+
+.scroll-output[
+.small[
+```{r echo=FALSE}
+long_1a %>% kable()
+```
+]]
+
+---
+
+```{r}
+long_1a <- long_1a %>% 
+  mutate(year = lubridate::myd(year, truncated = 1))
+```
+
+
+```{r eval=FALSE}
+long_1a %>% View
+```
+
+---
+
+.scroll-output[
+.small[
+```{r echo=FALSE}
+long_1a %>% kable()
+```
+]]
+
+---
+
+```{r}
+long_1a %>% filter(Code %>% str_detect("E12")) %>% 
+  ggplot(aes(year, num_sales, color=Name)) + geom_line() + geom_point()
+```
+
+---
+
+### spread()
+
+```{r}
+long
+```
+
+You want to calculate the price of b relative to a.
+
+---
+
+.pull-left[
+```{r}
+long
+```
+]
+
+.pull-right[
+```{r}
+wide2 <- long %>% 
+  spread(key=type, value=price)
+wide2
+```
+]
+
+---
+
+.pull-left[
+```{r}
+long
+```
+]
+
+.pull-right[
+```{r}
+wide2 %>% 
+  mutate(ratio_ba = b/a)
+```
+]
