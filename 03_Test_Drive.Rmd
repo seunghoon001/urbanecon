@@ -1,0 +1,129 @@
+---
+title: "Test Drive"
+author: "Sanghoon Lee"
+#date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+Go to the 'C407' folder.
+
+Open 'C407.Rproj' file.
+
+- Project file. (See [here](https://r4ds.had.co.nz/workflow-projects.html#rstudio-projects) for detail.)
+
+- Sets the working folder to the folder where the file is located.
+
+--
+
+Create a new RScript.
+
+- Click 'File - New File - R Script'.
+
+- Save it in the 'Code' folder, as 'Test drive.R'.
+
+---
+
+In Console, type
+
+```{r eval=FALSE}
+install.packages("tidyverse")
+```
+
+--
+
+In the RScript editor, 
+
+```{r}
+library(tidyverse)
+library(lubridate)
+bca <- read_rds("data/bca_sm.rds")
+```
+
+- At the end of each line, press *Ctrl + Enter*.
+- The shortcut key for <- is *alt + -*.
+
+---
+
+In Console,
+```{r eval=FALSE}
+bca %>% View
+```
+
+- The shortcut key for %>% is *Ctrl + Shft + m*.
+
+---
+
+.scroll-output[
+```{r echo=FALSE}
+op <- options("width"=1000)
+bca %>% head(3) %>% kableExtra::kable()
+options(op)
+```
+]
+
+---
+
+Suppose you want to calculate average transaction price for each year. How would you do it?
+
+---
+
+In the RScript editor, 
+```{r}
+avg_price <- bca %>% 
+	group_by(sale_year = year(sale_date)) %>% 
+	summarise(avg_price = mean(price))
+```
+
+Press 'enter' at the end of the first two lines, and 'ctrl + enter' at the last line.
+
+---
+
+In the RScript editor, 
+```{r eval=FALSE}
+avg_price
+```
+
+---
+
+.scroll-output[
+```{r echo=FALSE}
+avg_price %>% kableExtra::kable()
+```
+]
+
+---
+
+In the RScript editor, 
+```{r eval=FALSE}
+ggplot(avg_price, aes(sale_year, avg_price)) + 
+	geom_line() + 
+	geom_point() + 
+	scale_y_continuous(labels = scales::comma) 
+```
+
+---
+
+```{r echo=FALSE}
+ggplot(avg_price, aes(sale_year, avg_price)) + geom_line() + geom_point() + scale_y_continuous(labels = scales::comma)
+```
+
+---
+
+In the R Script editor,
+```{r}
+ggsave("Temp/avg_price.png")
+```
+
+- Check 'avg_price.png' is generated in 'C407/Temp' folder.

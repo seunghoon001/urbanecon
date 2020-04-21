@@ -1,0 +1,145 @@
+---
+title: "Working Directory and Relative Path"
+author: "Sanghoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(kableExtra)
+```
+
+## Working Directory
+
+The (current) working directory is the directory R is currently working in.
+
+--
+
+The working directory is the default location R uses when reading or writing a file.
+
+--
+
+When you open the 'c407' project file, it sets the working directory to be the one where the project file is located, i.e., 'c407' folder.
+
+---
+
+Open the 'c407' project file.
+
+--
+
+The top of Console pane shows the working directory.
+
+--
+
+Or you can type in Console
+```{r eval=FALSE}
+getwd()
+```
+
+--
+
+Confirm that the directory is the one where the project file is located.
+
+To see contents in the current working folder in 'Files' pane, click 'More - Go to Working Directory' in the pane.
+
+---
+
+The working directory is the default location R uses when reading or writing a file.
+
+```{r}
+library(tidyverse)
+```
+
+```{r eval=FALSE}
+bca <- read_rds("bca_sm.rds")
+```
+
+--
+
+The command above does not work, since R cannot find the file in the current working folder.
+
+---
+
+Instead, use
+```{r}
+bca <- read_rds("Data/bca_sm.rds")
+```
+
+--
+
+Confirm in 'Files' pane that the 'bca_sm.rds' is in 'Data' subfolder from the working directory.
+
+--
+
+Note we use '/' rather than '\'.
+
+--
+
+This is called a relative path.
+
+- A relative path is shorter than an absolute path.
+
+- It is more portable.
+
+---
+
+```{r}
+ggplot(mtcars) + geom_point(aes(mpg,hp))
+```
+
+---
+
+The following saves the plot in 'c407', the current working folder.
+```{r eval=FALSE}
+ggsave("mpg_hp.png")
+```
+
+--
+
+If you want to save the plot in 'Temp' subfolder, use
+--
+```{r}
+ggsave("Temp/mpg_hp.png")
+```
+
+Confirm in 'Files' pane, that the files are created in the two folders.
+
+---
+
+## Task
+
+Open '2016_census_pumf_ind.rds' in 'Data' subfolder, and names it to 'pumf'.
+
+--
+
+```{r}
+pumf <- read_rds('Data/2016_census_pumf_ind.rds')
+```
+
+--
+
+Browse the data using 'View()' function.
+
+--
+
+```{r eval=FALSE}
+View(pumf)
+```
+
+---
+
+.scroll-output[
+```{r echo=FALSE}
+pumf %>% head(3) %>% kable()
+```
+]
+
