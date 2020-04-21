@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>ggplot2 - 2</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sanghoon Lee" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="c407_slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# ggplot2 - 2
+## Aesthetic
+### Sanghoon Lee
+### 30 January, 2020
+
+---
+
+
+
+
+aesthetics
+
+- color
+- size
+- shape
+- fill
+- linetype
+
+attribute
+
+scale functions
+
+---
+
+
+```r
+library(lubridate)
+library(tidyverse)
+```
+
+
+```r
+bca &lt;- read_rds("Data/bca_sm.rds")
+```
+
+---
+
+
+```r
+bca %&gt;% count(aa_id, aa_label, sort=TRUE)
+```
+
+```
+# A tibble: 7 x 3
+  aa_id aa_label                         n
+  &lt;chr&gt; &lt;chr&gt;                        &lt;int&gt;
+1 09    Vancouver                   198954
+2 14    Surrey-White Rock           198325
+3 10    North Fraser                141477
+4 11    Richmond-Delta              113448
+5 15    Fraser Valley               102080
+6 08    North Shore-Squamish Valley  65004
+7 10    &lt;NA&gt;                         47928
+```
+
+---
+
+
+```r
+by_aa &lt;- bca %&gt;% 
+  filter(! is.na(aa_label)) %&gt;% 
+  group_by(aa_label) %&gt;% 
+  summarise(
+    avg_floorarea = mean(floorarea, na.rm = TRUE), 
+    avg_price=mean(price), 
+    n=n())
+```
+
+---
+
+
+```r
+is.na(c(NA, 1, 2))
+```
+
+```
+[1]  TRUE FALSE FALSE
+```
+
+
+```r
+! is.na(c(NA, 1, 2))
+```
+
+```
+[1] FALSE  TRUE  TRUE
+```
+
+
+```r
+tibble(x=c(NA,1,2)) %&gt;% filter(!is.na(x))
+```
+
+```
+# A tibble: 2 x 1
+      x
+  &lt;dbl&gt;
+1     1
+2     2
+```
+
+---
+
+
+```r
+mean(c(1,3,NA))
+```
+
+```
+[1] NA
+```
+
+
+```r
+mean(c(1,3,NA), na.rm = TRUE)
+```
+
+```
+[1] 2
+```
+
+---
+
+
+```r
+by_aa
+```
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; aa_label &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; avg_floorarea &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; avg_price &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; n &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1531.455 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 383815.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 102080 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1438.649 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 496537.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 141477 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1613.238 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 887400.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 65004 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1558.847 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 512484.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 113448 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1654.652 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 437603.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 198325 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1142.288 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 707202.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 198954 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+
+---
+
+
+```r
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-12-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price, color=aa_label))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-13-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+.small[
+
+```r
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-14-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+.small[
+
+```r
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label, size=n))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-15-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+.small[
+
+```r
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, alpha=n, size=n))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-16-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+
+```r
+ggplot(by_aa) + geom_col(aes(aa_label, n))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-17-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(by_aa) + geom_col(aes(aa_label, n)) + coord_flip()
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-18-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(by_aa) + geom_col(aes(aa_label, n, fill=aa_label)) + coord_flip()
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-19-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+.small[
+
+```r
+by_aa_yr &lt;- bca %&gt;% 
+  filter(! is.na(aa_label)) %&gt;% 
+  group_by(aa_label, year=year(sale_date)) %&gt;% 
+  summarise(avg_price = mean(price), n=n())
+```
+]
+
+
+```r
+by_aa_yr
+```
+
+.scroll-output[
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; aa_label &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; year &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; avg_price &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; n &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 197542.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3618 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2001 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 198188.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4419 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2002 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 213438.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5750 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 235822.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6529 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2004 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 264991.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6603 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2005 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 292390.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7438 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 351765.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6941 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2007 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 393595.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6909 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 415421.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4778 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 386968.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4987 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2010 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 411364.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3893 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 423682.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4784 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 424437.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4371 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2013 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 423505.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4341 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2014 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 442415.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5094 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2015 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 469631.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6856 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 582323.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7314 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 615091.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5528 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Fraser Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 709609.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1927 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 246880.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5263 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2001 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 248683.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7214 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2002 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 268400.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9053 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 295640.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9519 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2004 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 325471.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9347 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2005 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 377855.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10982 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 441800.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7835 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2007 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 485765.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8478 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 494862.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5661 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 462953.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7443 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2010 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 529515.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5976 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 576171.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7255 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 567619.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5974 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2013 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 577150.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6635 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2014 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 632623.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7393 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2015 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 711698.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9020 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 834734.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8481 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 795648.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7551 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Fraser &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 894357.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2397 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 421172.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3035 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2001 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 402345.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3495 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2002 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 406502.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4553 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 457034.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4544 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2004 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 556535.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4290 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2005 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 641074.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4812 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 762175.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3620 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2007 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 871753.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3738 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 894910.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2407 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 814163.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3050 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2010 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 929272.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2648 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1154364.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3559 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1078583.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2551 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2013 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1081789.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3001 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2014 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1190604.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3415 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2015 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1321681.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4506 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1653134.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3784 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1522512.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3012 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North Shore-Squamish Valley &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1540206.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 984 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 246910.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4419 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2001 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 241230.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5663 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2002 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 256650.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7026 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 275785.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8367 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2004 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 317500.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7908 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2005 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 361464.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8982 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 425511.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6897 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2007 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 477774.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7105 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 512320.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4557 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 498215.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6499 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2010 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 570087.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5637 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 637300.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6011 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 553536.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 791 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2013 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 636538.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4963 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2014 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 682709.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6029 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2015 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 760366.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7689 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 891423.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6998 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 876340.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6156 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Richmond-Delta &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 957309.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1751 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 226780.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6498 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2001 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 227014.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8811 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2002 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 245964.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 11663 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 267913.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 12873 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2004 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 296915.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 13011 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2005 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 328203.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 15222 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 383822.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 13111 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2007 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 433075.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 11680 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 445780.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8025 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 427135.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10080 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2010 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 455627.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9212 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 511750.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10686 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 494959.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8867 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2013 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 507342.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8432 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2014 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 531815.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9994 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2015 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 594241.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 12633 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 689958.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 13602 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 672944.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10529 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Surrey-White Rock &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 747625.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3396 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 319410.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8666 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2001 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 320986.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9658 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2002 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 332090.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 12418 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 361036.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 14535 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2004 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 398397.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 14073 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2005 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 482234.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 16235 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 536927.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 13510 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2007 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 649571.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 12413 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 698365.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7854 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 699016.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10299 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2010 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 793593.0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8266 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 916571.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9462 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 878878.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7779 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2013 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 960350.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8712 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2014 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1021954.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9995 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2015 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1147760.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 11712 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1351637.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10382 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2017 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1196790.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9842 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Vancouver &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2018 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1310827.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3143 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+
+---
+
+
+```r
+ggplot(by_aa_yr) + geom_line(aes(year, avg_price, color=aa_label))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-23-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+.small[
+
+```r
+ggplot(by_aa_yr) + geom_line(aes(year, avg_price, color=aa_label, linetype=aa_label))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-24-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+### Attributes
+
+
+```r
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price, color="blue"))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-25-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+.small[
+
+```r
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price, color="Sanghoon"))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-26-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+
+```r
+ggplot(by_aa) + geom_point(aes(avg_floorarea, avg_price), color="blue")
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-27-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price), color="blue", size=5)
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-28-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+van17 &lt;- bca %&gt;% filter(aa_id == "09", year(sale_date) == 2017)
+ggplot(van17) + geom_point(aes(floorarea, price))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-29-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1)
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-30-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+### Scale functions
+
+.small[
+
+```r
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label, size=n))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-31-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+.small[
+
+```r
+ggplot(by_aa) + 
+  geom_point(aes(avg_floorarea, avg_price, color=aa_label, shape=aa_label, size=n)) + 
+  scale_color_discrete("") + scale_shape("") + 
+  scale_size(guide='none')
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-32-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+
+```r
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1)
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-33-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1) +
+  scale_x_continuous(limits=c(200,3000)) +
+  scale_y_continuous(limits=c(0,5000000))
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-34-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+ggplot(van17) + geom_point(aes(floorarea, price), alpha=0.1) +
+  scale_x_log10() + scale_y_log10()
+```
+
+&lt;img src="11_ggplot2_2_files/figure-html/unnamed-chunk-35-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
