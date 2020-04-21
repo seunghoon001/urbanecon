@@ -1,0 +1,94 @@
+---
+title: "How to Run R Codes"
+author: "Seung Hoon Lee"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set()
+```
+
+## Two ways to run R codes
+
+Console
+
+R Script
+
+---
+
+## Console
+
+Type the following codes in Console pane of RStudio, line by line.
+
+```{r, eval=FALSE}
+mtcars
+```
+
+```{r, eval=FALSE}
+mean(mtcars$mpg)
+```
+
+```{r, eval=FALSE}
+plot(mtcars$hp, mtcars$mpg)
+```
+
+Note that R shows the results in the same Console or in the Plots pane.
+
+---
+
+## R Script
+
+Console: hard to reproduce or revise your analysis later. 
+
+R Script allows you to save the whole codes as a file.
+
+---
+
+Click 'File - New File - R Script`.
+
+In the new Script editor, type the following codes. 
+
+- Press 'ctrl-enter' instead of enter key, *at the end of each line*:
+
+```{r, eval=FALSE}
+mtcars
+```
+
+```{r, eval=FALSE}
+mean(mtcars$mpg)
+```
+
+```{r, eval=FALSE}
+plot(mtcars$hp, mtcars$mpg)
+```
+
+Save the program as a file in 'Temp' folder, by clicking 'File - Save'.
+
+---
+
+You can run the whole program by pressing 'ctrl-shift-enter' key.
+
+- Press 'ctrl-shft-F10' to restart R.
+
+- Go to the Script editor, and press 'ctrl-shift-enter'.
+
+---
+
+Use both Console and R Script for an analysis.
+
+- Include the codes you want to keep, in your R Script.
+
+- Run the codes you do not want to keep, in Console.
+
+    - Package installation.
+    - Quick checks
+    
