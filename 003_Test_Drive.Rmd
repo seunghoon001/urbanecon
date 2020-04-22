@@ -1,0 +1,138 @@
+---
+title: "Test Drive"
+author: "Seung Hoon Lee"
+#date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: [default, c407_slides.css]
+    lib_dir: libs
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+Go to the 'urbanecon' folder.
+
+Open 'urbanecon.Rproj' file.
+
+- Project file. (See [here](https://r4ds.had.co.nz/workflow-projects.html#rstudio-projects) for detail.)
+
+- Sets the working folder to the folder where the file is located.
+
+--
+
+Create a new RScript.
+
+- Click 'File - New File - R Script'.
+
+- Save it in the 'Code' folder, as 'Test drive.R'.
+
+---
+
+In Console, type
+
+```{r eval=FALSE}
+install.packages("tidyverse")
+```
+
+--
+
+In the RScript editor, 
+
+```{r}
+library(tidyverse)
+hmda <- read_rds("Data/hmda_ga.rds")
+```
+
+- At the end of each line, press *Ctrl + Enter*.
+- The shortcut key for <- is *alt + -*.
+
+
+---
+
+Home Mortgage Disclosure Act (HMDA) Data
+
+- HMDA is a United States federal law to require financial institutions to provide mortgage data to the public. 
+- HMDA covers every mortgage transaction including ones for Home improvement and Refinancing. 
+- We focus on transactions for Home purchase in Georgia from 2004 to 2014.
+- Variable descriptions: "lar_record_codes.pdf".
+- Full download available at [here](https://www.consumerfinance.gov/data-research/hmda/)
+
+---
+
+In Console,
+```{r eval=FALSE}
+hmda %>% View
+```
+
+- The shortcut key for %>% is *Ctrl + Shft + m*.
+
+---
+
+.scroll-output[
+```{r echo=FALSE}
+op <- options("width"=1000)
+hmda %>% head(3) %>% kableExtra::kable()
+options(op)
+```
+]
+
+---
+
+Suppose you want to calculate average value of approved loans for each year. How would you do it?
+
+---
+
+In the RScript editor, 
+```{r}
+avg_loan_val <- hmda %>% filter(loan_action==1) %>% 
+	group_by(year) %>% 
+	summarise(avg_loan_value = mean(loan_amount))
+```
+
+Press 'enter' at the end of the first two lines, and 'ctrl + enter' at the last line.
+
+---
+
+In the RScript editor, 
+```{r eval=FALSE}
+avg_loan_val
+```
+
+---
+
+.scroll-output[
+```{r echo=FALSE}
+avg_loan_val %>% kableExtra::kable()
+```
+]
+
+---
+
+In the RScript editor, 
+```{r eval=FALSE}
+ggplot(avg_loan_val, aes(year, avg_loan_value)) + 
+	geom_line() + 
+	geom_point() 
+```
+
+---
+
+```{r echo=FALSE}
+ggplot(avg_loan_val, aes(year, avg_loan_value)) +  geom_line() + geom_point()
+```
+
+---
+
+In the R Script editor,
+```{r}
+ggsave("Temp/avg_loan.png")
+```
+
+- Check 'avg_loan.png' is generated in 'urbanecon/Temp' folder.
